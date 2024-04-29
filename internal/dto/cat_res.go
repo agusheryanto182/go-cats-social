@@ -21,6 +21,6 @@ type CatAllsRes struct {
 	Description string       `json:"description"`
 	HasMatched  bool         `json:"hasMatched"`
 	DeletedAt   sql.NullTime `json:"-"`
-	CreatedAt   time.Time    `json:"createdAt"`
+	CreatedAt   string       `json:"createdAt"`
 	UpdatedAt   time.Time    `json:"-"`
 }

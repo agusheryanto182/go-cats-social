@@ -49,7 +49,7 @@ func (c *CatControllerImpl) GetCat(w http.ResponseWriter, r *http.Request) {
 	limitInt, _ := strconv.Atoi(limit)
 	offsetInt, _ := strconv.Atoi(offset)
 
-	query := "SELECT * FROM cats WHERE 1=1"
+	query := "SELECT id, user_id, name, race, sex, age_in_month, description, has_matched, image_urls, to_char(created_at AT TIME ZONE 'ASIA/JAKARTA', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS created_at FROM cats WHERE 1=1"
 
 	args := make([]interface{}, 0)
 
