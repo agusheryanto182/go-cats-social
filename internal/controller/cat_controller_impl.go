@@ -102,6 +102,8 @@ func (c *CatControllerImpl) GetCat(w http.ResponseWriter, r *http.Request) {
 		args = append(args, "%"+cleanedSearch+"%")
 	}
 
+	query += " AND deleted_at IS NULL"
+
 	if limit == "" {
 		limitInt = 5
 	}

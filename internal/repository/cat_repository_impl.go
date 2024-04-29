@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/agusheryanto182/go-social-media/internal/dto"
@@ -16,6 +17,9 @@ type CatRepositoryImpl struct {
 // FindByFilterAndArgs implements CatRepository.
 func (r *CatRepositoryImpl) FindByFilterAndArgs(ctx context.Context, query string, args []interface{}) ([]*dto.CatAllsRes, error) {
 	rows, err := r.db.Query(ctx, query, args...)
+
+	fmt.Println(query)
+	fmt.Println(args...)
 
 	if err != nil {
 		return nil, err
@@ -40,16 +44,6 @@ func (r *CatRepositoryImpl) FindByFilterAndArgs(ctx context.Context, query strin
 	return cats, nil
 }
 
-// FindByAgeInMonth implements CatRepository.
-func (r *CatRepositoryImpl) FindByAgeInMonth(ctx context.Context, ageInMonth uint) ([]*domain.Cats, error) {
-	panic("unimplemented")
-}
-
-// FindByHasMatched implements CatRepository.
-func (r *CatRepositoryImpl) FindByHasMatched(ctx context.Context, hasMatched bool) ([]*domain.Cats, error) {
-	panic("unimplemented")
-}
-
 // FindByID implements CatRepository.
 func (r *CatRepositoryImpl) FindByID(ctx context.Context, id uint64) (*domain.Cats, error) {
 	query := "SELECT id, user_id, name, race, sex, description, age_in_month, is_already_matched, image_urls, to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DDTHH24:MI:SSZ') AS created_at FROM cats WHERE id = $1 AND deleted_at IS NULL LIMIT 1"
@@ -71,31 +65,6 @@ func (r *CatRepositoryImpl) FindByID(ctx context.Context, id uint64) (*domain.Ca
 	}
 
 	return cat, nil
-}
-
-// FindByLimitAndOffset implements CatRepository.
-func (r *CatRepositoryImpl) FindByLimitAndOffset(ctx context.Context, limit int, offset int) ([]*domain.Cats, error) {
-	panic("unimplemented")
-}
-
-// FindByName implements CatRepository.
-func (r *CatRepositoryImpl) FindByName(ctx context.Context, name string) ([]*domain.Cats, error) {
-	panic("unimplemented")
-}
-
-// FindByOwned implements CatRepository.
-func (r *CatRepositoryImpl) FindByOwned(ctx context.Context, userID uint64) ([]*domain.Cats, error) {
-	panic("unimplemented")
-}
-
-// FindByRace implements CatRepository.
-func (r *CatRepositoryImpl) FindByRace(ctx context.Context, race string) ([]*domain.Cats, error) {
-	panic("unimplemented")
-}
-
-// FindBySex implements CatRepository.
-func (r *CatRepositoryImpl) FindBySex(ctx context.Context, sex string) ([]*domain.Cats, error) {
-	panic("unimplemented")
 }
 
 // Create implements CatRepository.
