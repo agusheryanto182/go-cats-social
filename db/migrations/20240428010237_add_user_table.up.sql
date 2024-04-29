@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS cats (
 );
 
 CREATE INDEX IF NOT EXISTS cat_id ON cats (id);
+CREATE INDEX IF NOT EXISTS cat_user_id ON cats (user_id);
 CREATE INDEX IF NOT EXISTS cat_race ON cats (race);
 CREATE INDEX IF NOT EXISTS cat_sex ON cats (sex);
 CREATE INDEX IF NOT EXISTS cat_matched ON cats (has_matched);

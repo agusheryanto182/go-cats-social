@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"time"
 
 	"github.com/agusheryanto182/go-social-media/internal/dto"
 	"github.com/agusheryanto182/go-social-media/internal/helper"
@@ -14,6 +13,51 @@ import (
 type CatServiceImpl struct {
 	catRepo repository.CatRepository
 	db      *pgx.Conn
+}
+
+// GetByFilterAndArgs implements CatService.
+func (s *CatServiceImpl) GetByFilterAndArgs(ctx context.Context, query string, args []interface{}) ([]*dto.CatAllsRes, error) {
+	return s.catRepo.FindByFilterAndArgs(ctx, query, args)
+}
+
+// GetByAgeInMonth implements CatService.
+func (s *CatServiceImpl) GetByAgeInMonth(ctx context.Context, ageInMonth uint) ([]*domain.Cats, error) {
+	panic("unimplemented")
+}
+
+// GetByHasMatched implements CatService.
+func (s *CatServiceImpl) GetByHasMatched(ctx context.Context, hasMatched bool) ([]*domain.Cats, error) {
+	panic("unimplemented")
+}
+
+// GetByID implements CatService.
+func (s *CatServiceImpl) GetByID(ctx context.Context, id uint64) (*domain.Cats, error) {
+	return s.catRepo.FindByID(ctx, id)
+}
+
+// GetByLimitAndOffset implements CatService.
+func (s *CatServiceImpl) GetByLimitAndOffset(ctx context.Context, limit int, offset int) ([]*domain.Cats, error) {
+	panic("unimplemented")
+}
+
+// GetByName implements CatService.
+func (s *CatServiceImpl) GetByName(ctx context.Context, name string) ([]*domain.Cats, error) {
+	panic("unimplemented")
+}
+
+// GetByRace implements CatService.
+func (s *CatServiceImpl) GetByRace(ctx context.Context, race string) ([]*domain.Cats, error) {
+	panic("unimplemented")
+}
+
+// GetBySex implements CatService.
+func (s *CatServiceImpl) GetBySex(ctx context.Context, sex string) ([]*domain.Cats, error) {
+	panic("unimplemented")
+}
+
+// GetByUserID implements CatService.
+func (s *CatServiceImpl) GetByUserID(ctx context.Context, userID uint64) ([]*domain.Cats, error) {
+	panic("unimplemented")
 }
 
 // Create implements CatService.
@@ -40,7 +84,7 @@ func (s *CatServiceImpl) Create(ctx context.Context, payload *dto.CatReq) (*dto.
 
 	return &dto.CatRes{
 		ID:        cat.ID,
-		CreatedAt: cat.CreatedAt.Format(time.RFC3339),
+		CreatedAt: cat.CreatedAt,
 	}, nil
 }
 

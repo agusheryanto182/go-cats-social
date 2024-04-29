@@ -18,6 +18,7 @@ func NewRouter(userCtrl controller.UserController, catCtrl controller.CatControl
 	cat := r.PathPrefix("/v1/cat").Subrouter()
 	cat.Use(middleware.NewAuthMiddleware(userSvc, jwtSvc).Protected)
 	cat.HandleFunc("", catCtrl.Create).Methods("POST")
+	cat.HandleFunc("", catCtrl.GetCat).Methods("GET")
 
 	return r
 }
