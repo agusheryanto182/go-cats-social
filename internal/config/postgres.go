@@ -9,7 +9,6 @@ import (
 )
 
 func InitialDB(cfg *Global) *pgx.Conn {
-	// urlExample := "postgres://username:password@localhost:5432/database_name"
 	url := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable", cfg.Database.User, cfg.Database.Password, cfg.Database.Host, cfg.Database.Port, cfg.Database.Name)
 
 	db, err := pgx.Connect(context.Background(), url)

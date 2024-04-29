@@ -26,7 +26,11 @@ func main() {
 	userSvc := service.NewUserService(userRepo, db, hash, jwt)
 	userCtrl := controller.NewUserController(userSvc, valid)
 
-	router := app.NewRouter(userCtrl)
+	catRepo := repository.NewCatRepository(db)
+	catSvc := service.NewCatService(catRepo, db)
+	catCtrl := controller.NewCatController(catSvc, valid)
+
+	router := app.NewRouter(userCtrl, catCtrl, userSvc, jwt)
 
 	srv := &http.Server{
 		Handler: router,

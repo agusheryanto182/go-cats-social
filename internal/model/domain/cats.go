@@ -13,6 +13,4 @@ type Cats struct {
 	IsAlreadyMatched bool      `json:"hasMatched"`
 	ImageUrls        []string  `json:"imageUrls"`
 	CreatedAt        time.Time `json:"createdAt"`
-	UpdatedAt        time.Time `json:"updatedAt"`
-	User             *User     `json:"user"`
 }

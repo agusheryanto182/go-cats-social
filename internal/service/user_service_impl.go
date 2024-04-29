@@ -20,6 +20,20 @@ type UserServiceImpl struct {
 	jwt  jwt.IJwt
 }
 
+// GetByID implements UserService.
+func (s *UserServiceImpl) GetByID(ctx context.Context, id uint64) (*dto.UserResWithID, error) {
+	result, err := s.repo.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	return &dto.UserResWithID{
+		ID:    result.ID,
+		Email: result.Email,
+		Name:  result.Name,
+	}, nil
+}
+
 // Login implements UserService.
 func (s *UserServiceImpl) Login(ctx context.Context, payload *dto.UserLoginReq) (*dto.UserRes, error) {
 	user, err := s.repo.FindByEmail(ctx, payload.Email)

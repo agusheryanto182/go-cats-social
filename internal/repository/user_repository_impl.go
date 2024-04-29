@@ -11,9 +11,19 @@ type UserRepositoryImpl struct {
 	db *pgx.Conn
 }
 
+// FindByID implements UserRepository.
+func (r *UserRepositoryImpl) FindByID(ctx context.Context, id uint64) (*domain.User, error) {
+	query := "SELECT id, email, name, password FROM users WHERE id = $1 AND deleted_at IS NULL"
+	user := &domain.User{}
+	if err := r.db.QueryRow(ctx, query, id).Scan(&user.ID, &user.Email, &user.Name, &user.Password); err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
 // FindByEmail implements UserRepository.
 func (r *UserRepositoryImpl) FindByEmail(ctx context.Context, email string) (*domain.User, error) {
-	query := "SELECT id, email, name, password FROM users WHERE email = $1"
+	query := "SELECT id, email, name, password FROM users WHERE email = $1 AND deleted_at IS NULL"
 
 	user := &domain.User{}
 	if err := r.db.QueryRow(ctx, query, email).Scan(&user.ID, &user.Email, &user.Name, &user.Password); err != nil {
@@ -24,7 +34,7 @@ func (r *UserRepositoryImpl) FindByEmail(ctx context.Context, email string) (*do
 
 // IsEmailExist implements UserRepository.
 func (r *UserRepositoryImpl) IsEmailExist(ctx context.Context, email string) (bool, error) {
-	query := "SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)"
+	query := "SELECT EXISTS(SELECT 1 FROM users WHERE email = $1 AND deleted_at IS NULL) "
 
 	var exists bool
 	if err := r.db.QueryRow(ctx, query, email).Scan(&exists); err != nil {
