@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS cats (
     sex cat_sex_enum NOT NULL,
     age_in_month INT NOT NULL,
     description VARCHAR(200) NOT NULL,
-    is_already_matched BOOLEAN NOT NULL DEFAULT false,
+    has_matched BOOLEAN NOT NULL DEFAULT false,
     image_urls TEXT[] NOT NULL,
     deleted_at TIMESTAMP,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS cats (
 CREATE INDEX IF NOT EXISTS cat_id ON cats (id);
 CREATE INDEX IF NOT EXISTS cat_race ON cats (race);
 CREATE INDEX IF NOT EXISTS cat_sex ON cats (sex);
-CREATE INDEX IF NOT EXISTS cat_matched ON cats (is_already_matched);
+CREATE INDEX IF NOT EXISTS cat_matched ON cats (has_matched);
 CREATE INDEX IF NOT EXISTS cat_age ON cats (age_in_month);
 CREATE INDEX IF NOT EXISTS cat_name ON cats (name);
 
