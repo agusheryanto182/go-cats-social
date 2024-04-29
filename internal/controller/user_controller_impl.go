@@ -16,6 +16,40 @@ type UserControllerImpl struct {
 	validator *validator.Validate
 }
 
+// Login implements UserController.
+func (c *UserControllerImpl) Login(w http.ResponseWriter, r *http.Request) {
+	loginReq := &dto.UserLoginReq{}
+	if err := helper.ReadFromRequestBody(r, loginReq); err != nil {
+		helper.WriteResponse(w, web.InternalServerErrorResponse("internal server error", err))
+		return
+	}
+
+	if err := c.validator.Struct(loginReq); err != nil {
+		helper.WriteResponse(w, web.BadRequestResponse("request doesn't pass validation", err))
+		return
+	}
+
+	isUserExist, _ := c.svc.IsEmailExist(r.Context(), loginReq.Email)
+	if !isUserExist {
+		helper.WriteResponse(w, web.NotFoundResponse("not found", errors.New("user not found")))
+		return
+	}
+
+	result, err := c.svc.Login(r.Context(), loginReq)
+	if err != nil {
+		switch {
+		case err.Error() == "wrong password":
+			helper.WriteResponse(w, web.BadRequestResponse("bad request", err))
+			return
+		default:
+			helper.WriteResponse(w, web.InternalServerErrorResponse("internal server error", err))
+			return
+		}
+	}
+
+	helper.WriteResponse(w, web.OkResponse("User successfully logged", result))
+}
+
 // Register implements UserController.
 func (c *UserControllerImpl) Register(w http.ResponseWriter, r *http.Request) {
 	newUser := &dto.UserReq{}

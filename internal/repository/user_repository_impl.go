@@ -11,6 +11,17 @@ type UserRepositoryImpl struct {
 	db *pgx.Conn
 }
 
+// FindByEmail implements UserRepository.
+func (r *UserRepositoryImpl) FindByEmail(ctx context.Context, email string) (*domain.User, error) {
+	query := "SELECT id, email, name, password FROM users WHERE email = $1"
+
+	user := &domain.User{}
+	if err := r.db.QueryRow(ctx, query, email).Scan(&user.ID, &user.Email, &user.Name, &user.Password); err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
 // IsEmailExist implements UserRepository.
 func (r *UserRepositoryImpl) IsEmailExist(ctx context.Context, email string) (bool, error) {
 	query := "SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)"

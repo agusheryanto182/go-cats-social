@@ -10,4 +10,5 @@ import (
 type UserRepository interface {
 	Create(ctx context.Context, tx pgx.Tx, user *domain.User) (*domain.User, error)
 	IsEmailExist(ctx context.Context, email string) (bool, error)
+	FindByEmail(ctx context.Context, email string) (*domain.User, error)
 }

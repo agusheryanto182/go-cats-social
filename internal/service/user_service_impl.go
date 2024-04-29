@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 
 	"github.com/agusheryanto182/go-social-media/internal/dto"
 	"github.com/agusheryanto182/go-social-media/internal/helper"
@@ -19,13 +20,36 @@ type UserServiceImpl struct {
 	jwt  jwt.IJwt
 }
 
+// Login implements UserService.
+func (s *UserServiceImpl) Login(ctx context.Context, payload *dto.UserLoginReq) (*dto.UserRes, error) {
+	user, err := s.repo.FindByEmail(ctx, payload.Email)
+	if err != nil {
+		return nil, err
+	}
+
+	if !s.hash.CheckPasswordHash(payload.Password, user.Password) {
+		return nil, errors.New("wrong password")
+	}
+
+	token, err := s.jwt.GenerateJWT(user.ID, user.Email)
+	if err != nil {
+		return nil, err
+	}
+
+	return &dto.UserRes{
+		Email:       user.Email,
+		Name:        user.Name,
+		AccessToken: token,
+	}, nil
+}
+
 // IsEmailExist implements UserService.
 func (s *UserServiceImpl) IsEmailExist(ctx context.Context, email string) (bool, error) {
 	return s.repo.IsEmailExist(ctx, email)
 }
 
 // Create implements UserService.
-func (s *UserServiceImpl) Create(ctx context.Context, payload *dto.UserReq) (*dto.UserCreateRes, error) {
+func (s *UserServiceImpl) Create(ctx context.Context, payload *dto.UserReq) (*dto.UserRes, error) {
 	tx, err := s.db.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return nil, err
@@ -55,7 +79,7 @@ func (s *UserServiceImpl) Create(ctx context.Context, payload *dto.UserReq) (*dt
 		return nil, err
 	}
 
-	return &dto.UserCreateRes{
+	return &dto.UserRes{
 		Email:       result.Email,
 		Name:        result.Name,
 		AccessToken: token,

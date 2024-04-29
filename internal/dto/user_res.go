@@ -1,6 +1,6 @@
 package dto
 
-type UserCreateRes struct {
+type UserRes struct {
 	Email       string `json:"email"`
 	Name        string `json:"name"`
 	AccessToken string `json:"accessToken"`
