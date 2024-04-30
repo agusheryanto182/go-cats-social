@@ -14,4 +14,5 @@ type CatRepository interface {
 	IsCatExist(ctx context.Context, catID, userID uint64) (bool, error)
 	FindByFilterAndArgs(ctx context.Context, query string, args []interface{}) ([]*dto.CatAllsRes, error)
 	Update(ctx context.Context, tx pgx.Tx, cat *domain.Cats) (*domain.Cats, error)
+	FindByIdAndUserID(ctx context.Context, id, userID uint64) (*domain.Cats, error)
 }

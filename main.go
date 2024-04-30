@@ -30,7 +30,11 @@ func main() {
 	catSvc := service.NewCatService(catRepo, db)
 	catCtrl := controller.NewCatController(catSvc, valid)
 
-	router := app.NewRouter(userCtrl, catCtrl, userSvc, jwt)
+	matchRepo := repository.NewMatchRepository(db)
+	matchSvc := service.NewMatchService(db, matchRepo)
+	matchCtrl := controller.NewMatchController(matchSvc, catSvc, valid)
+
+	router := app.NewRouter(userCtrl, catCtrl, userSvc, jwt, matchCtrl)
 
 	srv := &http.Server{
 		Handler: router,

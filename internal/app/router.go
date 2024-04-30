@@ -8,18 +8,29 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func NewRouter(userCtrl controller.UserController, catCtrl controller.CatController, userSvc service.UserService, jwtSvc jwt.IJwt) *mux.Router {
+func NewRouter(
+	userCtrl controller.UserController,
+	catCtrl controller.CatController,
+	userSvc service.UserService,
+	jwtSvc jwt.IJwt,
+	matchCtrl controller.MatchController,
+) *mux.Router {
+
 	r := mux.NewRouter()
 
+	// user
 	user := r.PathPrefix("/v1/user").Subrouter()
 	user.HandleFunc("/register", userCtrl.Register).Methods("POST")
 	user.HandleFunc("/login", userCtrl.Login).Methods("POST")
 
+	// cat
 	cat := r.PathPrefix("/v1/cat").Subrouter()
 	cat.Use(middleware.NewAuthMiddleware(userSvc, jwtSvc).Protected)
 	cat.HandleFunc("", catCtrl.Create).Methods("POST")
 	cat.HandleFunc("", catCtrl.GetCat).Methods("GET")
 	cat.HandleFunc("/{id}", catCtrl.Update).Methods("PUT")
+
+	cat.HandleFunc("/match", matchCtrl.Match).Methods("POST")
 
 	return r
 }

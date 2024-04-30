@@ -81,7 +81,7 @@ func (c *CatControllerImpl) GetCat(w http.ResponseWriter, r *http.Request) {
 	sex := r.URL.Query().Get("sex")
 	cleanedSex := strings.ReplaceAll(sex, "\"", "")
 
-	isAlreadyMatched := r.URL.Query().Get("isAlreadyMatched")
+	hasMatched := r.URL.Query().Get("hasMatched")
 
 	ageInMonth := r.URL.Query().Get("ageInMonth")
 	cleanedAgeInMonth := strings.ReplaceAll(ageInMonth, "\"", "")
@@ -113,8 +113,8 @@ func (c *CatControllerImpl) GetCat(w http.ResponseWriter, r *http.Request) {
 		args = append(args, cleanedSex)
 	}
 
-	if isAlreadyMatched != "" {
-		matched, _ := strconv.ParseBool(isAlreadyMatched)
+	if hasMatched != "" {
+		matched, _ := strconv.ParseBool(hasMatched)
 		query += " AND has_matched = $" + strconv.Itoa(len(args)+1)
 		args = append(args, matched)
 	}

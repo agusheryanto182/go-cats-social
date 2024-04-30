@@ -13,4 +13,5 @@ type CatService interface {
 	GetByFilterAndArgs(ctx context.Context, query string, args []interface{}) ([]*dto.CatAllsRes, error)
 	IsCatExist(ctx context.Context, catID, userID uint64) (bool, error)
 	Update(ctx context.Context, cat *dto.CatReq) (*domain.Cats, error)
+	GetByIdAndUserID(ctx context.Context, id, userID uint64) (*domain.Cats, error)
 }

@@ -15,6 +15,11 @@ type CatServiceImpl struct {
 	db      *pgx.Conn
 }
 
+// GetByIdAndUserID implements CatService.
+func (s *CatServiceImpl) GetByIdAndUserID(ctx context.Context, id uint64, userID uint64) (*domain.Cats, error) {
+	return s.catRepo.FindByIdAndUserID(ctx, id, userID)
+}
+
 // IsCatExist implements CatService.
 func (s *CatServiceImpl) IsCatExist(ctx context.Context, catID, userID uint64) (bool, error) {
 	return s.catRepo.IsCatExist(ctx, catID, userID)
