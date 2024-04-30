@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -10,11 +11,55 @@ import (
 	"github.com/agusheryanto182/go-social-media/internal/model/web"
 	"github.com/agusheryanto182/go-social-media/internal/service"
 	"github.com/go-playground/validator/v10"
+	"github.com/gorilla/mux"
 )
 
 type CatControllerImpl struct {
 	catSvc    service.CatService
 	validator *validator.Validate
+}
+
+// Update implements CatController.
+func (c *CatControllerImpl) Update(w http.ResponseWriter, r *http.Request) {
+	currentUser := r.Context().Value("CurrentUser").(dto.UserResWithID)
+
+	userID := currentUser.ID
+	vars := mux.Vars(r)
+	catID := vars["id"]
+	catInt, err := strconv.Atoi(catID)
+	if err != nil {
+		helper.WriteResponse(w, web.BadRequestResponse("invalid id", err))
+		return
+	}
+
+	isCatExist, _ := c.catSvc.IsCatExist(r.Context(), uint64(catInt), userID)
+	if !isCatExist {
+		helper.WriteResponse(w, web.NotFoundResponse("not found", errors.New("cat not found")))
+		return
+	}
+
+	catReq := &dto.CatReq{}
+	catReq.ID = uint64(catInt)
+	catReq.UserID = userID
+
+	if err := helper.ReadFromRequestBody(r, &catReq); err != nil {
+		helper.WriteResponse(w, web.InternalServerErrorResponse("internal server error", err))
+		return
+	}
+
+	if err := c.validator.Struct(catReq); err != nil {
+		helper.WriteResponse(w, web.BadRequestResponse("request doesn't pass validation", err))
+		return
+	}
+
+	cat, err := c.catSvc.Update(r.Context(), catReq)
+	if err != nil {
+		helper.WriteResponse(w, web.InternalServerErrorResponse("internal server error", err))
+		return
+	}
+
+	helper.WriteResponse(w, web.OkResponse("successfully update cat", cat))
+
 }
 
 // GetCat implements CatController.

@@ -14,13 +14,32 @@ type CatRepositoryImpl struct {
 }
 
 // IsCatExist implements CatRepository.
-func (r *CatRepositoryImpl) IsCatExist(ctx context.Context, id uint64) (bool, error) {
-	panic("unimplemented")
+func (r *CatRepositoryImpl) IsCatExist(ctx context.Context, catID, userID uint64) (bool, error) {
+	query := "SELECT EXISTS(SELECT 1 FROM cats WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL) "
+	var exist bool
+	if err := r.db.QueryRow(ctx, query, catID, userID).Scan(&exist); err != nil {
+		return false, err
+	}
+	return exist, nil
 }
 
 // Update implements CatRepository.
-func (r *CatRepositoryImpl) Update(ctx context.Context, tx pgx.Tx, cat *dto.CatReq) (*domain.Cats, error) {
-	panic("unimplemented")
+func (r *CatRepositoryImpl) Update(ctx context.Context, tx pgx.Tx, cat *domain.Cats) (*domain.Cats, error) {
+	query := "UPDATE cats SET name = $2, race = $3, sex = $4, age_in_month = $5, description = $6, image_urls = $7 WHERE id = $1 AND user_id = $8 AND deleted_at IS NULL RETURNING name, race, sex, age_in_month, description, image_urls, to_char(created_at AT TIME ZONE 'ASIA/JAKARTA', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS created_at"
+
+	row := tx.QueryRow(ctx, query, cat.ID, cat.Name, cat.Race, cat.Sex, cat.AgeInMonth, cat.Description, cat.ImageUrls, cat.UserID)
+	if err := row.Scan(
+		&cat.Name,
+		&cat.Race,
+		&cat.Sex,
+		&cat.AgeInMonth,
+		&cat.Description,
+		&cat.ImageUrls,
+		&cat.CreatedAt,
+	); err != nil {
+		return nil, err
+	}
+	return cat, nil
 }
 
 // FindByFilterAndArgs implements CatRepository.

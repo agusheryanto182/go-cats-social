@@ -11,7 +11,7 @@ import (
 type CatRepository interface {
 	Create(ctx context.Context, tx pgx.Tx, cat *domain.Cats) (*domain.Cats, error)
 	FindByID(ctx context.Context, id uint64) (*domain.Cats, error)
-	IsCatExist(ctx context.Context, id uint64) (bool, error)
+	IsCatExist(ctx context.Context, catID, userID uint64) (bool, error)
 	FindByFilterAndArgs(ctx context.Context, query string, args []interface{}) ([]*dto.CatAllsRes, error)
-	Update(ctx context.Context, tx pgx.Tx, cat *dto.CatReq) (*domain.Cats, error)
+	Update(ctx context.Context, tx pgx.Tx, cat *domain.Cats) (*domain.Cats, error)
 }

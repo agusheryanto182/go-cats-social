@@ -15,6 +15,34 @@ type CatServiceImpl struct {
 	db      *pgx.Conn
 }
 
+// IsCatExist implements CatService.
+func (s *CatServiceImpl) IsCatExist(ctx context.Context, catID, userID uint64) (bool, error) {
+	return s.catRepo.IsCatExist(ctx, catID, userID)
+}
+
+// Update implements CatService.
+func (s *CatServiceImpl) Update(ctx context.Context, cat *dto.CatReq) (*domain.Cats, error) {
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	defer helper.CommitOrRollback(tx)
+
+	payload := &domain.Cats{
+		ID:          cat.ID,
+		UserID:      cat.UserID,
+		Name:        cat.Name,
+		Race:        cat.Race,
+		Sex:         cat.Sex,
+		AgeInMonth:  cat.AgeInMonth,
+		Description: cat.Description,
+		ImageUrls:   cat.ImageUrls,
+	}
+
+	return s.catRepo.Update(ctx, tx, payload)
+}
+
 // GetByFilterAndArgs implements CatService.
 func (s *CatServiceImpl) GetByFilterAndArgs(ctx context.Context, query string, args []interface{}) ([]*dto.CatAllsRes, error) {
 	return s.catRepo.FindByFilterAndArgs(ctx, query, args)
