@@ -11,6 +11,16 @@ type MatchRepositoryImpl struct {
 	db *pgx.Conn
 }
 
+// IsHaveRequest implements MatchRepository.
+func (r *MatchRepositoryImpl) IsHaveRequest(ctx context.Context, catID uint64) (bool, error) {
+	query := "SELECT EXISTS (SELECT * FROM matches WHERE match_cat_id = $1 OR user_cat_id = $1)"
+	var exist bool
+	if err := r.db.QueryRow(ctx, query, catID).Scan(&exist); err != nil {
+		return false, err
+	}
+	return exist, nil
+}
+
 func (r *MatchRepositoryImpl) IsRequestExist(ctx context.Context, matchCatID, userCatID uint64) (bool, error) {
 	query := "SELECT EXISTS (SELECT * FROM matches WHERE match_cat_id = $1 AND user_cat_id = $2)"
 	var exist bool

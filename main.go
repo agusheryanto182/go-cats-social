@@ -23,15 +23,15 @@ func main() {
 	valid := validator.New()
 
 	userRepo := repository.NewUserRepository(db)
-	userSvc := service.NewUserService(userRepo, db, hash, jwt)
-	userCtrl := controller.NewUserController(userSvc, valid)
-
 	catRepo := repository.NewCatRepository(db)
-	catSvc := service.NewCatService(catRepo, db)
-	catCtrl := controller.NewCatController(catSvc, valid)
-
 	matchRepo := repository.NewMatchRepository(db)
+
+	userSvc := service.NewUserService(userRepo, db, hash, jwt)
+	catSvc := service.NewCatService(catRepo, db)
 	matchSvc := service.NewMatchService(db, matchRepo)
+
+	userCtrl := controller.NewUserController(userSvc, valid)
+	catCtrl := controller.NewCatController(catSvc, valid, matchSvc)
 	matchCtrl := controller.NewMatchController(matchSvc, catSvc, valid)
 
 	router := app.NewRouter(userCtrl, catCtrl, userSvc, jwt, matchCtrl)

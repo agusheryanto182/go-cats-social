@@ -15,6 +15,11 @@ type MatchServiceImpl struct {
 	matchRepo repository.MatchRepository
 }
 
+// IsHaveRequest implements MatchService.
+func (s *MatchServiceImpl) IsHaveRequest(ctx context.Context, catID uint64) (bool, error) {
+	return s.matchRepo.IsHaveRequest(ctx, catID)
+}
+
 // IsRequestExist implements MatchService.
 func (s *MatchServiceImpl) IsRequestExist(ctx context.Context, matchCatID uint64, userCatID uint64) (bool, error) {
 	return s.matchRepo.IsRequestExist(ctx, matchCatID, userCatID)

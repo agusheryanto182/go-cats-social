@@ -17,6 +17,7 @@ import (
 type CatControllerImpl struct {
 	catSvc    service.CatService
 	validator *validator.Validate
+	matchSvc  service.MatchService
 }
 
 // Update implements CatController.
@@ -26,21 +27,27 @@ func (c *CatControllerImpl) Update(w http.ResponseWriter, r *http.Request) {
 	userID := currentUser.ID
 	vars := mux.Vars(r)
 	catID := vars["id"]
-	catInt, err := strconv.Atoi(catID)
+	catInt, err := strconv.ParseUint(catID, 10, 64)
 	if err != nil {
 		helper.WriteResponse(w, web.BadRequestResponse("invalid id", err))
 		return
 	}
 
-	isCatExist, _ := c.catSvc.IsCatExist(r.Context(), uint64(catInt), userID)
-	if !isCatExist {
-		helper.WriteResponse(w, web.NotFoundResponse("not found", errors.New("cat not found")))
-		return
-	}
+	// isCatExist, _ := c.catSvc.IsCatExist(r.Context(), uint64(catInt), userID)
+	// if !isCatExist {
+	// 	helper.WriteResponse(w, web.NotFoundResponse("not found", errors.New("cat not found")))
+	// 	return
+	// }
 
 	catReq := &dto.CatReq{}
 	catReq.ID = uint64(catInt)
 	catReq.UserID = userID
+
+	checkCat, _ := c.catSvc.GetByIdAndUserID(r.Context(), catInt, userID)
+	if checkCat == nil {
+		helper.WriteResponse(w, web.NotFoundResponse("not found", errors.New("cat not found")))
+		return
+	}
 
 	if err := helper.ReadFromRequestBody(r, &catReq); err != nil {
 		helper.WriteResponse(w, web.InternalServerErrorResponse("internal server error", err))
@@ -50,6 +57,15 @@ func (c *CatControllerImpl) Update(w http.ResponseWriter, r *http.Request) {
 	if err := c.validator.Struct(catReq); err != nil {
 		helper.WriteResponse(w, web.BadRequestResponse("request doesn't pass validation", err))
 		return
+	}
+
+	isRequest, _ := c.matchSvc.IsHaveRequest(r.Context(), catInt)
+
+	if catReq.Sex != checkCat.Sex {
+		if checkCat.HasMatched || isRequest {
+			helper.WriteResponse(w, web.BadRequestResponse("bad request", errors.New("you can't update sex when cat is already requested or matched")))
+			return
+		}
 	}
 
 	cat, err := c.catSvc.Update(r.Context(), catReq)
@@ -198,9 +214,10 @@ func (c *CatControllerImpl) Create(w http.ResponseWriter, r *http.Request) {
 	helper.WriteResponse(w, web.OkResponse("successfully add cat", result))
 }
 
-func NewCatController(catSvc service.CatService, validator *validator.Validate) CatController {
+func NewCatController(catSvc service.CatService, validator *validator.Validate, matchSvc service.MatchService) CatController {
 	return &CatControllerImpl{
 		catSvc:    catSvc,
 		validator: validator,
+		matchSvc:  matchSvc,
 	}
 }
