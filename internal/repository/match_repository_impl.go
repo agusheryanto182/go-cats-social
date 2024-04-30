@@ -13,6 +13,51 @@ type MatchRepositoryImpl struct {
 	db *pgx.Conn
 }
 
+// ApproveTheMatch implements MatchRepository.
+func (r *MatchRepositoryImpl) ApproveTheMatch(ctx context.Context, tx pgx.Tx, matchID uint64, receiverID uint64) error {
+	query := "UPDATE matches SET is_approved = true WHERE id = $1 AND receiver_by = $2 AND deleted_at IS NULL"
+	row, err := tx.Exec(ctx, query, matchID, receiverID)
+	if err != nil {
+		return err
+	}
+
+	if row.RowsAffected() == 0 {
+		return pgx.ErrNoRows
+	}
+	return nil
+}
+
+// DeleteRequestByCatID implements MatchRepository.
+func (r *MatchRepositoryImpl) DeleteRequestByCatIdAndUserCatID(ctx context.Context, tx pgx.Tx, catID, userCatID uint64) error {
+	query := `
+	DELETE FROM matches 
+	WHERE is_approved = false 
+	AND (match_cat_id = $1 OR match_cat_id = $2 OR user_cat_id = $1 OR user_cat_id = $2)
+	`
+
+	row, err := tx.Exec(ctx, query, catID, userCatID)
+	if err != nil {
+		return err
+	}
+
+	if row.RowsAffected() == 0 {
+		return pgx.ErrNoRows
+	}
+
+	return nil
+}
+
+// IsMatchExist implements MatchRepository.
+func (r *MatchRepositoryImpl) IsMatchExist(ctx context.Context, id, userID uint64) (*domain.Matches, error) {
+	query := "SELECT issued_by, match_cat_id, user_cat_id, is_approved, deleted_at FROM matches WHERE id = $1 AND receiver_by = $2"
+	match := &domain.Matches{}
+
+	if err := r.db.QueryRow(ctx, query, id, userID).Scan(&match.IssuedBy, &match.MatchCatID, &match.UserCatID, &match.IsApproved, &match.DeletedAt); err != nil {
+		return nil, err
+	}
+	return match, nil
+}
+
 // FindMatchByCatID implements MatchRepository.
 func (r *MatchRepositoryImpl) FindMatchByCatID(ctx context.Context, userID uint64) ([]*dto.MatchGetRes, error) {
 	query := `
@@ -46,7 +91,9 @@ func (r *MatchRepositoryImpl) FindMatchByCatID(ctx context.Context, userID uint6
 	JOIN cats c1 ON m.match_cat_id = c1.id 
 	JOIN cats c2 ON m.user_cat_id = c2.id
 	WHERE m.issued_by = $1 OR m.receiver_by = $1
-	ORDER BY m.created_at DESC`
+	AND m.deleted_at IS NULL
+	ORDER BY m.created_at DESC
+	`
 
 	rows, err := r.db.Query(ctx, query, userID)
 	if err != nil {

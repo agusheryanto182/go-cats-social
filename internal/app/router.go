@@ -33,6 +33,7 @@ func NewRouter(
 
 	cat.HandleFunc("/match", matchCtrl.Match).Methods("POST")
 	cat.HandleFunc("/match", matchCtrl.GetMatch).Methods("GET")
+	cat.HandleFunc("/match/approve", matchCtrl.Approve).Methods("POST")
 
 	return r
 }

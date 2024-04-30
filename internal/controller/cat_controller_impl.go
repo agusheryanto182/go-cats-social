@@ -178,7 +178,7 @@ func (c *CatControllerImpl) GetCat(w http.ResponseWriter, r *http.Request) {
 		args = append(args, "%"+cleanedSearch+"%")
 	}
 
-	query += " AND deleted_at IS NULL"
+	query += " AND deleted_at IS NULL ORDER BY created_at DESC"
 
 	if limit == "" {
 		limitInt = 5
@@ -226,7 +226,7 @@ func (c *CatControllerImpl) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	helper.WriteResponse(w, web.OkResponse("successfully add cat", result))
+	helper.WriteResponse(w, web.CreatedResponse("successfully add cat", result))
 }
 
 func NewCatController(catSvc service.CatService, validator *validator.Validate, matchSvc service.MatchService) CatController {

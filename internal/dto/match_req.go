@@ -9,3 +9,8 @@ type MatchReq struct {
 	UserCatInt  uint64
 	Message     string `json:"message" validate:"required,min=1,max=120"`
 }
+
+type MatchIdReq struct {
+	MatchID    string `json:"matchId" validate:"required,gte=1"`
+	MatchIdInt uint64
+}

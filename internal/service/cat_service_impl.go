@@ -15,6 +15,18 @@ type CatServiceImpl struct {
 	db      *pgx.Conn
 }
 
+// DoubleUpdateHasMatched implements CatService.
+func (s *CatServiceImpl) DoubleUpdateHasMatched(ctx context.Context, catID uint64, userCatID uint64) error {
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return err
+	}
+
+	defer helper.CommitOrRollback(tx)
+
+	return s.catRepo.DoubleUpdateHasMatched(ctx, tx, catID, userCatID)
+}
+
 // Delete implements CatService.
 func (s *CatServiceImpl) Delete(ctx context.Context, catID uint64, userID uint64) error {
 	tx, err := s.db.Begin(ctx)

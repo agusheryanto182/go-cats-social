@@ -18,6 +18,54 @@ type MatchControllerImpl struct {
 	valid    *validator.Validate
 }
 
+// Approve implements MatchController.
+func (c *MatchControllerImpl) Approve(w http.ResponseWriter, r *http.Request) {
+	currentUser := r.Context().Value("CurrentUser").(dto.UserResWithID)
+
+	matchID := &dto.MatchIdReq{}
+
+	if err := helper.ReadFromRequestBody(r, matchID); err != nil {
+		helper.WriteResponse(w, web.InternalServerErrorResponse("internal server error", err))
+		return
+	}
+
+	if err := c.valid.Struct(matchID); err != nil {
+		helper.WriteResponse(w, web.BadRequestResponse("validation error", err))
+		return
+	}
+
+	matchID.MatchIdInt, _ = strconv.ParseUint(matchID.MatchID, 10, 64)
+
+	isMatchExist, _ := c.matchSvc.IsMatchExist(r.Context(), matchID.MatchIdInt, currentUser.ID)
+	if isMatchExist == nil {
+		helper.WriteResponse(w, web.NotFoundResponse("not found", errors.New("match not found")))
+		return
+	}
+
+	if isMatchExist.DeletedAt != nil {
+		helper.WriteResponse(w, web.BadRequestResponse("bad request", errors.New("match id is no longer valid")))
+		return
+	}
+
+	if err := c.matchSvc.ApproveTheMatch(r.Context(), matchID.MatchIdInt, currentUser.ID); err != nil {
+		helper.WriteResponse(w, web.InternalServerErrorResponse("internal server error", err))
+		return
+	}
+	err := c.matchSvc.DeleteRequestByCatID(r.Context(), isMatchExist.MatchCatID, isMatchExist.UserCatID)
+	if err != nil {
+		helper.WriteResponse(w, web.InternalServerErrorResponse("internal server error", err))
+		return
+	}
+	err = c.catSvc.DoubleUpdateHasMatched(r.Context(), isMatchExist.MatchCatID, isMatchExist.UserCatID)
+	if err != nil {
+		helper.WriteResponse(w, web.InternalServerErrorResponse("internal server error", err))
+		return
+	}
+
+	helper.WriteResponse(w, web.OkResponse("success", "match approved"))
+
+}
+
 // GetMatch implements MatchController.
 func (c *MatchControllerImpl) GetMatch(w http.ResponseWriter, r *http.Request) {
 	currentUser := r.Context().Value("CurrentUser").(dto.UserResWithID)
@@ -58,7 +106,7 @@ func (c *MatchControllerImpl) Match(w http.ResponseWriter, r *http.Request) {
 
 	isReqExist, _ := c.matchSvc.IsRequestExist(r.Context(), uint64(matchCatIdInt), uint64(userCatIdInt))
 	if isReqExist {
-		helper.WriteResponse(w, web.BadRequestResponse("bad request", errors.New("request already exist")))
+		helper.WriteResponse(w, web.BadRequestResponse("bad request", errors.New("already matched or requested")))
 		return
 	}
 

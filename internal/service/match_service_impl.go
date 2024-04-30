@@ -15,6 +15,35 @@ type MatchServiceImpl struct {
 	matchRepo repository.MatchRepository
 }
 
+// ApproveTheMatch implements MatchService.
+func (s *MatchServiceImpl) ApproveTheMatch(ctx context.Context, matchID uint64, receiverID uint64) error {
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return err
+	}
+
+	defer helper.CommitOrRollback(tx)
+
+	return s.matchRepo.ApproveTheMatch(ctx, tx, matchID, receiverID)
+}
+
+// DeleteRequestByCatID implements MatchService.
+func (s *MatchServiceImpl) DeleteRequestByCatID(ctx context.Context, catID, userCatID uint64) error {
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return err
+	}
+
+	defer helper.CommitOrRollback(tx)
+
+	return s.matchRepo.DeleteRequestByCatIdAndUserCatID(ctx, tx, catID, userCatID)
+}
+
+// IsMatchExist implements MatchService.
+func (s *MatchServiceImpl) IsMatchExist(ctx context.Context, id, userID uint64) (*domain.Matches, error) {
+	return s.matchRepo.IsMatchExist(ctx, id, userID)
+}
+
 // GetMatch implements MatchService.
 func (s *MatchServiceImpl) GetMatch(ctx context.Context, userID uint64) ([]*dto.MatchGetRes, error) {
 	return s.matchRepo.FindMatchByCatID(ctx, userID)

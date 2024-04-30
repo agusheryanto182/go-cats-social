@@ -15,4 +15,5 @@ type CatService interface {
 	Update(ctx context.Context, cat *dto.CatReq) (*domain.Cats, error)
 	GetByIdAndUserID(ctx context.Context, id, userID uint64) (*domain.Cats, error)
 	Delete(ctx context.Context, catID, userID uint64) error
+	DoubleUpdateHasMatched(ctx context.Context, catID, userCatID uint64) error
 }

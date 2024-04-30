@@ -13,6 +13,16 @@ type CatRepositoryImpl struct {
 	db *pgx.Conn
 }
 
+// DoubleUpdateHasMatched implements CatRepository.
+func (r *CatRepositoryImpl) DoubleUpdateHasMatched(ctx context.Context, tx pgx.Tx, catID uint64, userCatID uint64) error {
+	query := "UPDATE cats SET has_matched = true WHERE id = $1 OR id = $2 AND deleted_at IS NULL"
+	_, err := tx.Exec(ctx, query, catID, userCatID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // Delete implements CatRepository.
 func (r *CatRepositoryImpl) Delete(ctx context.Context, tx pgx.Tx, catID uint64, userID uint64) error {
 	query := "UPDATE cats SET deleted_at = NOW() WHERE id = $1 AND user_id = $2"
