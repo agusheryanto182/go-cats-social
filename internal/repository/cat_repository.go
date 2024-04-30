@@ -17,4 +17,5 @@ type CatRepository interface {
 	FindByIdAndUserID(ctx context.Context, id, userID uint64) (*domain.Cats, error)
 	Delete(ctx context.Context, tx pgx.Tx, catID, userID uint64) error
 	DoubleUpdateHasMatched(ctx context.Context, tx pgx.Tx, catID, userCatID uint64) error
+	CheckCats(ctx context.Context, matchCatID, userCatID uint64) ([]*dto.CatResCheck, error)
 }

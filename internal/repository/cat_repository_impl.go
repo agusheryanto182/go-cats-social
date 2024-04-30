@@ -13,13 +13,40 @@ type CatRepositoryImpl struct {
 	db *pgx.Conn
 }
 
+// FindDoubleCats implements CatRepository.
+func (r *CatRepositoryImpl) CheckCats(ctx context.Context, matchCatID, userCatID uint64) ([]*dto.CatResCheck, error) {
+	query := "SELECT has_matched, deleted_at FROM cats WHERE (id = $1 OR id = $2)"
+	rows, err := r.db.Query(ctx, query, matchCatID, userCatID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	cats := []*dto.CatResCheck{}
+
+	for rows.Next() {
+		cat := &dto.CatResCheck{}
+		err = rows.Scan(&cat.HasMatched, &cat.DeletedAt)
+		if err != nil {
+			return nil, err
+		}
+		cats = append(cats, cat)
+	}
+	return cats, nil
+}
+
 // DoubleUpdateHasMatched implements CatRepository.
 func (r *CatRepositoryImpl) DoubleUpdateHasMatched(ctx context.Context, tx pgx.Tx, catID uint64, userCatID uint64) error {
 	query := "UPDATE cats SET has_matched = true WHERE id = $1 OR id = $2 AND deleted_at IS NULL"
-	_, err := tx.Exec(ctx, query, catID, userCatID)
+	rows, err := tx.Exec(ctx, query, catID, userCatID)
 	if err != nil {
 		return err
 	}
+
+	if rows.RowsAffected() != 2 {
+		return pgx.ErrNoRows
+	}
+
 	return nil
 }
 

@@ -24,3 +24,8 @@ type CatAllsRes struct {
 	CreatedAt   string       `json:"createdAt"`
 	UpdatedAt   time.Time    `json:"-"`
 }
+
+type CatResCheck struct {
+	HasMatched bool       `json:"hasMatched"`
+	DeletedAt  *time.Time `json:"deletedAt"`
+}

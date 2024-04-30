@@ -2,6 +2,7 @@ package controller
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -10,12 +11,50 @@ import (
 	"github.com/agusheryanto182/go-social-media/internal/model/web"
 	"github.com/agusheryanto182/go-social-media/internal/service"
 	"github.com/go-playground/validator/v10"
+	"github.com/jackc/pgx/v5"
 )
 
 type MatchControllerImpl struct {
 	matchSvc service.MatchService
 	catSvc   service.CatService
 	valid    *validator.Validate
+}
+
+// Reject implements MatchController.
+func (c *MatchControllerImpl) Reject(w http.ResponseWriter, r *http.Request) {
+	currentUser := r.Context().Value("CurrentUser").(dto.UserResWithID)
+
+	matchID := &dto.MatchIdReq{}
+
+	if err := helper.ReadFromRequestBody(r, matchID); err != nil {
+		helper.WriteResponse(w, web.InternalServerErrorResponse("internal server error", err))
+		return
+	}
+
+	if err := c.valid.Struct(matchID); err != nil {
+		helper.WriteResponse(w, web.BadRequestResponse("validation error", err))
+		return
+	}
+
+	matchID.MatchIdInt, _ = strconv.ParseUint(matchID.MatchID, 10, 64)
+
+	isMatchExist, _ := c.matchSvc.IsMatchExist(r.Context(), matchID.MatchIdInt, currentUser.ID)
+	if isMatchExist == nil {
+		helper.WriteResponse(w, web.NotFoundResponse("not found", errors.New("match not found")))
+		return
+	}
+
+	if isMatchExist.DeletedAt != nil {
+		helper.WriteResponse(w, web.BadRequestResponse("bad request", errors.New("match id is no longer valid")))
+		return
+	}
+
+	if err := c.matchSvc.Reject(r.Context(), matchID.MatchIdInt, currentUser.ID); err != nil {
+		helper.WriteResponse(w, web.InternalServerErrorResponse("internal server error", err))
+		return
+	}
+
+	helper.WriteResponse(w, web.OkResponse("successfully reject match requests", "success"))
 }
 
 // Approve implements MatchController.
@@ -47,20 +86,34 @@ func (c *MatchControllerImpl) Approve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := c.matchSvc.ApproveTheMatch(r.Context(), matchID.MatchIdInt, currentUser.ID); err != nil {
+	if isMatchExist.IsApproved {
+		helper.WriteResponse(w, web.BadRequestResponse("bad request", errors.New("match already approved")))
+		return
+	}
+
+	checkCats, _ := c.catSvc.CheckCats(r.Context(), isMatchExist.MatchCatID, isMatchExist.UserCatID)
+	fmt.Print(checkCats)
+	for _, cat := range checkCats {
+		if cat.HasMatched {
+			helper.WriteResponse(w, web.BadRequestResponse("bad request", errors.New("has matched")))
+			return
+		}
+
+		if cat.DeletedAt != nil {
+			helper.WriteResponse(w, web.BadRequestResponse("bad request", errors.New("match id is no longer valid")))
+			return
+		}
+	}
+
+	if err := c.matchSvc.ApproveTheMatch(r.Context(), matchID.MatchIdInt, isMatchExist.MatchCatID, isMatchExist.UserCatID, currentUser.ID); err != nil {
+		if err == pgx.ErrNoRows {
+			helper.WriteResponse(w, web.BadRequestResponse("bad request", err))
+			return
+		}
 		helper.WriteResponse(w, web.InternalServerErrorResponse("internal server error", err))
 		return
 	}
-	err := c.matchSvc.DeleteRequestByCatID(r.Context(), isMatchExist.MatchCatID, isMatchExist.UserCatID)
-	if err != nil {
-		helper.WriteResponse(w, web.InternalServerErrorResponse("internal server error", err))
-		return
-	}
-	err = c.catSvc.DoubleUpdateHasMatched(r.Context(), isMatchExist.MatchCatID, isMatchExist.UserCatID)
-	if err != nil {
-		helper.WriteResponse(w, web.InternalServerErrorResponse("internal server error", err))
-		return
-	}
+	c.matchSvc.DeleteRequestByCatID(r.Context(), isMatchExist.MatchCatID, isMatchExist.UserCatID)
 
 	helper.WriteResponse(w, web.OkResponse("success", "match approved"))
 

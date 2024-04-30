@@ -13,9 +13,27 @@ type MatchRepositoryImpl struct {
 	db *pgx.Conn
 }
 
+// Reject implements MatchRepository.
+func (r *MatchRepositoryImpl) Reject(ctx context.Context, tx pgx.Tx, matchID, receiverID uint64) error {
+	query := `
+	UPDATE matches SET deleted_at = NOW() WHERE id = $1 AND receiver_by = $2 AND is_approved = false AND deleted_at IS NULL
+	`
+
+	row, err := tx.Exec(ctx, query, matchID, receiverID)
+	if err != nil {
+		return err
+	}
+
+	if row.RowsAffected() == 0 {
+		return pgx.ErrNoRows
+	}
+
+	return nil
+}
+
 // ApproveTheMatch implements MatchRepository.
 func (r *MatchRepositoryImpl) ApproveTheMatch(ctx context.Context, tx pgx.Tx, matchID uint64, receiverID uint64) error {
-	query := "UPDATE matches SET is_approved = true WHERE id = $1 AND receiver_by = $2 AND deleted_at IS NULL"
+	query := "UPDATE matches SET is_approved = true WHERE id = $1 AND receiver_by = $2 AND is_approved = false AND deleted_at IS NULL"
 	row, err := tx.Exec(ctx, query, matchID, receiverID)
 	if err != nil {
 		return err
@@ -30,7 +48,7 @@ func (r *MatchRepositoryImpl) ApproveTheMatch(ctx context.Context, tx pgx.Tx, ma
 // DeleteRequestByCatID implements MatchRepository.
 func (r *MatchRepositoryImpl) DeleteRequestByCatIdAndUserCatID(ctx context.Context, tx pgx.Tx, catID, userCatID uint64) error {
 	query := `
-	DELETE FROM matches 
+	UPDATE matches SET deleted_at = NOW()
 	WHERE is_approved = false 
 	AND (match_cat_id = $1 OR match_cat_id = $2 OR user_cat_id = $1 OR user_cat_id = $2)
 	`
@@ -59,7 +77,7 @@ func (r *MatchRepositoryImpl) IsMatchExist(ctx context.Context, id, userID uint6
 }
 
 // FindMatchByCatID implements MatchRepository.
-func (r *MatchRepositoryImpl) FindMatchByCatID(ctx context.Context, userID uint64) ([]*dto.MatchGetRes, error) {
+func (r *MatchRepositoryImpl) FindMatchByIssuedID(ctx context.Context, issuedID uint64) ([]*dto.MatchGetRes, error) {
 	query := `
 	SELECT
 		m.id,
@@ -85,17 +103,17 @@ func (r *MatchRepositoryImpl) FindMatchByCatID(ctx context.Context, userID uint6
 		c2.has_matched AS user_cat_detail_has_matched,
 		c2.created_at AS user_cat_detail_created_at,
 		m.message,
-		m.created_at
+		m.created_at,
+		m.deleted_at
 	FROM matches m
 	JOIN users u ON m.issued_by = u.id
 	JOIN cats c1 ON m.match_cat_id = c1.id 
 	JOIN cats c2 ON m.user_cat_id = c2.id
 	WHERE m.issued_by = $1 OR m.receiver_by = $1
-	AND m.deleted_at IS NULL
 	ORDER BY m.created_at DESC
 	`
 
-	rows, err := r.db.Query(ctx, query, userID)
+	rows, err := r.db.Query(ctx, query, issuedID)
 	if err != nil {
 		return nil, err
 	}
@@ -131,9 +149,14 @@ func (r *MatchRepositoryImpl) FindMatchByCatID(ctx context.Context, userID uint6
 			&userCatDetailCreatedAt,
 			&match.Message,
 			&createdAt,
+			&match.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
+		if match.DeletedAt != nil {
+			continue
+		}
+
 		match.Issued.CreatedAt = issuedByCreatedAt.Format(time.RFC3339)
 		match.MatchCatDetail.CreatedAt = matchCatDetailCreatedAt.Format(time.RFC3339)
 		match.UserCatDetail.CreatedAt = userCatDetailCreatedAt.Format(time.RFC3339)

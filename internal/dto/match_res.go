@@ -1,5 +1,7 @@
 package dto
 
+import "time"
+
 type MatchGetRes struct {
 	ID             uint64     `json:"id"`
 	IssuedBy       uint64     `json:"-"`
@@ -11,6 +13,7 @@ type MatchGetRes struct {
 	IsApproved     bool       `json:"-"`
 	Message        string     `json:"message"`
 	CreatedAt      string     `json:"createdAt"`
+	DeletedAt      *time.Time `json:"deletedAt"`
 }
 
 type UserMatch struct {

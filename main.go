@@ -28,7 +28,7 @@ func main() {
 
 	userSvc := service.NewUserService(userRepo, db, hash, jwt)
 	catSvc := service.NewCatService(catRepo, db)
-	matchSvc := service.NewMatchService(db, matchRepo)
+	matchSvc := service.NewMatchService(db, matchRepo, catRepo)
 
 	userCtrl := controller.NewUserController(userSvc, valid)
 	catCtrl := controller.NewCatController(catSvc, valid, matchSvc)

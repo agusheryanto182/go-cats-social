@@ -15,6 +15,11 @@ type CatServiceImpl struct {
 	db      *pgx.Conn
 }
 
+// GetDoubleCats implements CatService.
+func (s *CatServiceImpl) CheckCats(ctx context.Context, matchCatID , userCatID uint64) ([]*dto.CatResCheck, error) {
+	return s.catRepo.CheckCats(ctx, matchCatID, userCatID)
+}
+
 // DoubleUpdateHasMatched implements CatService.
 func (s *CatServiceImpl) DoubleUpdateHasMatched(ctx context.Context, catID uint64, userCatID uint64) error {
 	tx, err := s.db.Begin(ctx)
