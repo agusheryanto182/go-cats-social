@@ -18,6 +18,19 @@ type MatchControllerImpl struct {
 	valid    *validator.Validate
 }
 
+// GetMatch implements MatchController.
+func (c *MatchControllerImpl) GetMatch(w http.ResponseWriter, r *http.Request) {
+	currentUser := r.Context().Value("CurrentUser").(dto.UserResWithID)
+
+	matchRes, err := c.matchSvc.GetMatch(r.Context(), currentUser.ID)
+	if err != nil {
+		helper.WriteResponse(w, web.InternalServerErrorResponse("internal server error", err))
+		return
+	}
+
+	helper.WriteResponse(w, web.OkResponse("successfully get match requests", matchRes))
+}
+
 // Match implements MatchController.
 func (c *MatchControllerImpl) Match(w http.ResponseWriter, r *http.Request) {
 	currentUser := r.Context().Value("CurrentUser").(dto.UserResWithID)
@@ -41,6 +54,7 @@ func (c *MatchControllerImpl) Match(w http.ResponseWriter, r *http.Request) {
 	userCatDetail, _ := c.catSvc.GetByIdAndUserID(r.Context(), userCatIdInt, currentUser.ID)
 	matchReq.MatchCatInt = matchCatIdInt
 	matchReq.UserCatInt = userCatIdInt
+	matchReq.ReceiverBy = matchCatDetail.UserID
 
 	isReqExist, _ := c.matchSvc.IsRequestExist(r.Context(), uint64(matchCatIdInt), uint64(userCatIdInt))
 	if isReqExist {

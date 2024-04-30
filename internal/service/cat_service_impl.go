@@ -15,6 +15,18 @@ type CatServiceImpl struct {
 	db      *pgx.Conn
 }
 
+// Delete implements CatService.
+func (s *CatServiceImpl) Delete(ctx context.Context, catID uint64, userID uint64) error {
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return err
+	}
+
+	defer helper.CommitOrRollback(tx)
+
+	return s.catRepo.Delete(ctx, tx, catID, userID)
+}
+
 // GetByIdAndUserID implements CatService.
 func (s *CatServiceImpl) GetByIdAndUserID(ctx context.Context, id uint64, userID uint64) (*domain.Cats, error) {
 	return s.catRepo.FindByIdAndUserID(ctx, id, userID)

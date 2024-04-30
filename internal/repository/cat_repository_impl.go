@@ -13,6 +13,21 @@ type CatRepositoryImpl struct {
 	db *pgx.Conn
 }
 
+// Delete implements CatRepository.
+func (r *CatRepositoryImpl) Delete(ctx context.Context, tx pgx.Tx, catID uint64, userID uint64) error {
+	query := "UPDATE cats SET deleted_at = NOW() WHERE id = $1 AND user_id = $2"
+	res, err := tx.Exec(ctx, query, catID, userID)
+	if err != nil {
+		return err
+	}
+	numRowsAffected := res.RowsAffected()
+
+	if numRowsAffected == 0 {
+		return err
+	}
+	return nil
+}
+
 // FindByIdAndUserID implements CatRepository.
 func (r *CatRepositoryImpl) FindByIdAndUserID(ctx context.Context, id uint64, userID uint64) (*domain.Cats, error) {
 	query := "SELECT id, name, race, sex, age_in_month, description, image_urls, to_char(created_at AT TIME ZONE 'ASIA/JAKARTA', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS created_at FROM cats WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL"

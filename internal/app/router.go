@@ -29,8 +29,10 @@ func NewRouter(
 	cat.HandleFunc("", catCtrl.Create).Methods("POST")
 	cat.HandleFunc("", catCtrl.GetCat).Methods("GET")
 	cat.HandleFunc("/{id}", catCtrl.Update).Methods("PUT")
+	cat.HandleFunc("/{id}", catCtrl.Delete).Methods("DELETE")
 
 	cat.HandleFunc("/match", matchCtrl.Match).Methods("POST")
+	cat.HandleFunc("/match", matchCtrl.GetMatch).Methods("GET")
 
 	return r
 }

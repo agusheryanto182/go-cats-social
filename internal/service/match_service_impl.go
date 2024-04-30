@@ -15,6 +15,11 @@ type MatchServiceImpl struct {
 	matchRepo repository.MatchRepository
 }
 
+// GetMatch implements MatchService.
+func (s *MatchServiceImpl) GetMatch(ctx context.Context, userID uint64) ([]*dto.MatchGetRes, error) {
+	return s.matchRepo.FindMatchByCatID(ctx, userID)
+}
+
 // IsHaveRequest implements MatchService.
 func (s *MatchServiceImpl) IsHaveRequest(ctx context.Context, catID uint64) (bool, error) {
 	return s.matchRepo.IsHaveRequest(ctx, catID)
@@ -36,6 +41,7 @@ func (s *MatchServiceImpl) Create(ctx context.Context, payload *dto.MatchReq) er
 
 	return s.matchRepo.Create(ctx, tx, &domain.Matches{
 		IssuedBy:   payload.IssuedBy,
+		ReceiverBy: payload.ReceiverBy,
 		MatchCatID: payload.MatchCatInt,
 		UserCatID:  payload.UserCatInt,
 		Message:    payload.Message,

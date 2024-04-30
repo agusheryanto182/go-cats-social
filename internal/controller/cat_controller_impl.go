@@ -20,6 +20,27 @@ type CatControllerImpl struct {
 	matchSvc  service.MatchService
 }
 
+// Delete implements CatController.
+func (c *CatControllerImpl) Delete(w http.ResponseWriter, r *http.Request) {
+	currentUser := r.Context().Value("CurrentUser").(dto.UserResWithID)
+
+	vars := mux.Vars(r)
+	catID := vars["id"]
+	catInt, _ := strconv.ParseUint(catID, 10, 64)
+
+	isCatExist, _ := c.catSvc.IsCatExist(r.Context(), catInt, currentUser.ID)
+	if !isCatExist {
+		helper.WriteResponse(w, web.NotFoundResponse("not found", errors.New("cat not found")))
+		return
+	}
+
+	if err := c.catSvc.Delete(r.Context(), catInt, currentUser.ID); err != nil {
+		helper.WriteResponse(w, web.InternalServerErrorResponse("internal server error", err))
+		return
+	}
+	helper.WriteResponse(w, web.OkResponse("success", "cat deleted"))
+}
+
 // Update implements CatController.
 func (c *CatControllerImpl) Update(w http.ResponseWriter, r *http.Request) {
 	currentUser := r.Context().Value("CurrentUser").(dto.UserResWithID)
@@ -32,12 +53,6 @@ func (c *CatControllerImpl) Update(w http.ResponseWriter, r *http.Request) {
 		helper.WriteResponse(w, web.BadRequestResponse("invalid id", err))
 		return
 	}
-
-	// isCatExist, _ := c.catSvc.IsCatExist(r.Context(), uint64(catInt), userID)
-	// if !isCatExist {
-	// 	helper.WriteResponse(w, web.NotFoundResponse("not found", errors.New("cat not found")))
-	// 	return
-	// }
 
 	catReq := &dto.CatReq{}
 	catReq.ID = uint64(catInt)

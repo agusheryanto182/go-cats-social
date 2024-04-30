@@ -54,6 +54,7 @@ CREATE INDEX IF NOT EXISTS cat_name ON cats (name);
 CREATE TABLE IF NOT EXISTS matches (
     id SERIAL PRIMARY KEY,
     issued_by INT NOT NULL REFERENCES users(id),
+    receiver_by INT NOT NULL REFERENCES users(id),
     match_cat_id INT NOT NULL REFERENCES cats(id),
     user_cat_id INT NOT NULL REFERENCES cats(id),
     is_approved BOOLEAN NOT NULL DEFAULT false,
