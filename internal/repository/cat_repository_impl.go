@@ -135,7 +135,7 @@ func (r *CatRepositoryImpl) FindByFilterAndArgs(ctx context.Context, query strin
 
 // FindByID implements CatRepository.
 func (r *CatRepositoryImpl) FindByID(ctx context.Context, id uint64) (*domain.Cats, error) {
-	query := "SELECT id, user_id, name, race, sex, description, age_in_month, has_matched, image_urls, to_char(created_at AT TIME ZONE 'ASIA/JAKARTA', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS created_at FROM cats WHERE id = $1 AND deleted_at IS NULL LIMIT 1"
+	query := "SELECT id, user_id, name, race, sex, description, age_in_month, has_matched, image_urls, to_char(created_at AT TIME ZONE 'ASIA/JAKARTA', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS created_at FROM cats WHERE id = $1 AND deleted_at IS NULL"
 
 	cat := &domain.Cats{}
 	if err := r.db.QueryRow(ctx, query, id).Scan(

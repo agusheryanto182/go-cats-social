@@ -28,7 +28,12 @@ func (c *CatControllerImpl) Delete(w http.ResponseWriter, r *http.Request) {
 	catID := vars["id"]
 	catInt, _ := strconv.ParseUint(catID, 10, 64)
 
-	isCatExist, _ := c.catSvc.IsCatExist(r.Context(), catInt, currentUser.ID)
+	isCatExist, err := c.catSvc.IsCatExist(r.Context(), catInt, currentUser.ID)
+	if err != nil {
+		helper.WriteResponse(w, web.InternalServerErrorResponse("internal server error", err))
+		return
+	}
+
 	if !isCatExist {
 		helper.WriteResponse(w, web.NotFoundResponse("not found", errors.New("cat not found")))
 		return
@@ -65,7 +70,7 @@ func (c *CatControllerImpl) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := helper.ReadFromRequestBody(r, &catReq); err != nil {
-		helper.WriteResponse(w, web.InternalServerErrorResponse("internal server error", err))
+		helper.WriteResponse(w, web.BadRequestResponse("bad request", err))
 		return
 	}
 
@@ -74,7 +79,11 @@ func (c *CatControllerImpl) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	isRequest, _ := c.matchSvc.IsHaveRequest(r.Context(), catInt)
+	isRequest, err := c.matchSvc.IsHaveRequest(r.Context(), catInt)
+	if err != nil {
+		helper.WriteResponse(w, web.InternalServerErrorResponse("internal server error", err))
+		return
+	}
 
 	if catReq.Sex != checkCat.Sex {
 		if checkCat.HasMatched || isRequest {
@@ -200,6 +209,11 @@ func (c *CatControllerImpl) GetCat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(result) <= 0 {
+		helper.WriteResponse(w, web.NotFoundResponse("not found", errors.New("cat not found")))
+		return
+	}
+
 	helper.WriteResponse(w, web.OkResponse("successfully get cats", result))
 }
 
@@ -209,7 +223,7 @@ func (c *CatControllerImpl) Create(w http.ResponseWriter, r *http.Request) {
 
 	newCat := &dto.CatReq{}
 	if err := helper.ReadFromRequestBody(r, newCat); err != nil {
-		helper.WriteResponse(w, web.InternalServerErrorResponse("internal server error", err))
+		helper.WriteResponse(w, web.BadRequestResponse("bad request", err))
 		return
 	}
 

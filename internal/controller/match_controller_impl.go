@@ -27,9 +27,18 @@ func (c *MatchControllerImpl) DeleteTheMatch(w http.ResponseWriter, r *http.Requ
 
 	vars := mux.Vars(r)
 	matchID := vars["id"]
-	matchUint, _ := strconv.ParseUint(matchID, 10, 64)
+	matchUint, err := strconv.ParseUint(matchID, 10, 64)
+	if err != nil {
+		helper.WriteResponse(w, web.BadRequestResponse("invalid id", err))
+		return
+	}
 
-	isMatchExist, _ := c.matchSvc.IsMatchExist(r.Context(), matchUint)
+	isMatchExist, err := c.matchSvc.IsMatchExist(r.Context(), matchUint)
+	if err != nil {
+		helper.WriteResponse(w, web.InternalServerErrorResponse("internal server error", err))
+		return
+	}
+
 	if isMatchExist == nil || isMatchExist.IssuedBy != currentUser.ID {
 		helper.WriteResponse(w, web.NotFoundResponse("not found", errors.New("match not found")))
 		return
@@ -55,7 +64,7 @@ func (c *MatchControllerImpl) Reject(w http.ResponseWriter, r *http.Request) {
 	matchID := &dto.MatchIdReq{}
 
 	if err := helper.ReadFromRequestBody(r, matchID); err != nil {
-		helper.WriteResponse(w, web.InternalServerErrorResponse("internal server error", err))
+		helper.WriteResponse(w, web.BadRequestResponse("bad request", err))
 		return
 	}
 
@@ -157,6 +166,11 @@ func (c *MatchControllerImpl) GetMatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(matchRes) == 0 {
+		helper.WriteResponse(w, web.NotFoundResponse("no match found", errors.New("null")))
+		return
+	}
+
 	helper.WriteResponse(w, web.OkResponse("successfully get match requests", matchRes))
 }
 
@@ -177,10 +191,30 @@ func (c *MatchControllerImpl) Match(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	matchCatIdInt, _ := strconv.ParseUint(matchReq.MatchCatID, 10, 64)
-	userCatIdInt, _ := strconv.ParseUint(matchReq.UserCatID, 10, 64)
-	matchCatDetail, _ := c.catSvc.GetByID(r.Context(), matchCatIdInt)
-	userCatDetail, _ := c.catSvc.GetByIdAndUserID(r.Context(), userCatIdInt, currentUser.ID)
+	matchCatIdInt, err := strconv.ParseUint(matchReq.MatchCatID, 10, 64)
+	if err != nil {
+		helper.WriteResponse(w, web.BadRequestResponse("bad request", err))
+		return
+	}
+
+	userCatIdInt, err := strconv.ParseUint(matchReq.UserCatID, 10, 64)
+	if err != nil {
+		helper.WriteResponse(w, web.BadRequestResponse("bad request", err))
+		return
+	}
+
+	matchCatDetail, err := c.catSvc.GetByID(r.Context(), matchCatIdInt)
+	if err != nil {
+		helper.WriteResponse(w, web.BadRequestResponse("bad request", err))
+		return
+	}
+
+	userCatDetail, err := c.catSvc.GetByIdAndUserID(r.Context(), userCatIdInt, currentUser.ID)
+	if err != nil {
+		helper.WriteResponse(w, web.BadRequestResponse("bad request", err))
+		return
+	}
+
 	matchReq.MatchCatInt = matchCatIdInt
 	matchReq.UserCatInt = userCatIdInt
 	matchReq.ReceiverBy = matchCatDetail.UserID
