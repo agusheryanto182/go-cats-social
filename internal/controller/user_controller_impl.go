@@ -20,7 +20,7 @@ type UserControllerImpl struct {
 func (c *UserControllerImpl) Login(w http.ResponseWriter, r *http.Request) {
 	loginReq := &dto.UserLoginReq{}
 	if err := helper.ReadFromRequestBody(r, loginReq); err != nil {
-		helper.WriteResponse(w, web.InternalServerErrorResponse("internal server error", err))
+		helper.WriteResponse(w, web.BadRequestResponse("bad request", err))
 		return
 	}
 
@@ -54,7 +54,7 @@ func (c *UserControllerImpl) Login(w http.ResponseWriter, r *http.Request) {
 func (c *UserControllerImpl) Register(w http.ResponseWriter, r *http.Request) {
 	newUser := &dto.UserReq{}
 	if err := helper.ReadFromRequestBody(r, newUser); err != nil {
-		helper.WriteResponse(w, web.InternalServerErrorResponse("internal server error", err))
+		helper.WriteResponse(w, web.BadRequestResponse("bad request", err))
 		return
 	}
 

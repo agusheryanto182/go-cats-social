@@ -7,4 +7,5 @@ type MatchController interface {
 	GetMatch(w http.ResponseWriter, r *http.Request)
 	Approve(w http.ResponseWriter, r *http.Request)
 	Reject(w http.ResponseWriter, r *http.Request)
+	DeleteTheMatch(w http.ResponseWriter, r *http.Request)
 }

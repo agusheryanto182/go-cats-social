@@ -11,6 +11,7 @@ import (
 	"github.com/agusheryanto182/go-social-media/internal/model/web"
 	"github.com/agusheryanto182/go-social-media/internal/service"
 	"github.com/go-playground/validator/v10"
+	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -18,6 +19,33 @@ type MatchControllerImpl struct {
 	matchSvc service.MatchService
 	catSvc   service.CatService
 	valid    *validator.Validate
+}
+
+// DeleteTheMatch implements MatchController.
+func (c *MatchControllerImpl) DeleteTheMatch(w http.ResponseWriter, r *http.Request) {
+	currentUser := r.Context().Value("CurrentUser").(dto.UserResWithID)
+
+	vars := mux.Vars(r)
+	matchID := vars["id"]
+	matchUint, _ := strconv.ParseUint(matchID, 10, 64)
+
+	isMatchExist, _ := c.matchSvc.IsMatchExist(r.Context(), matchUint)
+	if isMatchExist == nil || isMatchExist.IssuedBy != currentUser.ID {
+		helper.WriteResponse(w, web.NotFoundResponse("not found", errors.New("match not found")))
+		return
+	}
+
+	if isMatchExist.DeletedAt != nil || isMatchExist.IsApproved {
+		helper.WriteResponse(w, web.BadRequestResponse("bad request", errors.New("matchId is already approved / reject")))
+		return
+	}
+
+	if err := c.matchSvc.DeleteMatchByIssuer(r.Context(), matchUint); err != nil {
+		helper.WriteResponse(w, web.InternalServerErrorResponse("internal server error", err))
+		return
+	}
+
+	helper.WriteResponse(w, web.OkResponse("success", "successfully remove a cat match request"))
 }
 
 // Reject implements MatchController.
@@ -38,8 +66,8 @@ func (c *MatchControllerImpl) Reject(w http.ResponseWriter, r *http.Request) {
 
 	matchID.MatchIdInt, _ = strconv.ParseUint(matchID.MatchID, 10, 64)
 
-	isMatchExist, _ := c.matchSvc.IsMatchExist(r.Context(), matchID.MatchIdInt, currentUser.ID)
-	if isMatchExist == nil {
+	isMatchExist, _ := c.matchSvc.IsMatchExist(r.Context(), matchID.MatchIdInt)
+	if isMatchExist == nil || isMatchExist.ReceiverBy != currentUser.ID {
 		helper.WriteResponse(w, web.NotFoundResponse("not found", errors.New("match not found")))
 		return
 	}
@@ -75,8 +103,8 @@ func (c *MatchControllerImpl) Approve(w http.ResponseWriter, r *http.Request) {
 
 	matchID.MatchIdInt, _ = strconv.ParseUint(matchID.MatchID, 10, 64)
 
-	isMatchExist, _ := c.matchSvc.IsMatchExist(r.Context(), matchID.MatchIdInt, currentUser.ID)
-	if isMatchExist == nil {
+	isMatchExist, _ := c.matchSvc.IsMatchExist(r.Context(), matchID.MatchIdInt)
+	if isMatchExist == nil || isMatchExist.ReceiverBy != currentUser.ID {
 		helper.WriteResponse(w, web.NotFoundResponse("not found", errors.New("match not found")))
 		return
 	}

@@ -13,6 +13,21 @@ type MatchRepositoryImpl struct {
 	db *pgx.Conn
 }
 
+// DeleteMatchByIssuer implements MatchRepository.
+func (r *MatchRepositoryImpl) DeleteMatchByIssuer(ctx context.Context, tx pgx.Tx, id uint64) error {
+	query := "UPDATE matches SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL"
+
+	row, err := tx.Exec(ctx, query, id)
+	if err != nil {
+		return err
+	}
+
+	if row.RowsAffected() == 0 {
+		return pgx.ErrNoRows
+	}
+	return nil
+}
+
 // Reject implements MatchRepository.
 func (r *MatchRepositoryImpl) Reject(ctx context.Context, tx pgx.Tx, matchID, receiverID uint64) error {
 	query := `
@@ -66,11 +81,11 @@ func (r *MatchRepositoryImpl) DeleteRequestByCatIdAndUserCatID(ctx context.Conte
 }
 
 // IsMatchExist implements MatchRepository.
-func (r *MatchRepositoryImpl) IsMatchExist(ctx context.Context, id, userID uint64) (*domain.Matches, error) {
-	query := "SELECT issued_by, match_cat_id, user_cat_id, is_approved, deleted_at FROM matches WHERE id = $1 AND receiver_by = $2"
+func (r *MatchRepositoryImpl) IsMatchExist(ctx context.Context, id uint64) (*domain.Matches, error) {
+	query := "SELECT issued_by, receiver_by, match_cat_id, user_cat_id, is_approved, deleted_at FROM matches WHERE id = $1"
 	match := &domain.Matches{}
 
-	if err := r.db.QueryRow(ctx, query, id, userID).Scan(&match.IssuedBy, &match.MatchCatID, &match.UserCatID, &match.IsApproved, &match.DeletedAt); err != nil {
+	if err := r.db.QueryRow(ctx, query, id).Scan(&match.IssuedBy, &match.ReceiverBy, &match.MatchCatID, &match.UserCatID, &match.IsApproved, &match.DeletedAt); err != nil {
 		return nil, err
 	}
 	return match, nil
@@ -180,7 +195,7 @@ func (r *MatchRepositoryImpl) IsHaveRequest(ctx context.Context, catID uint64) (
 }
 
 func (r *MatchRepositoryImpl) IsRequestExist(ctx context.Context, matchCatID, userCatID uint64) (bool, error) {
-	query := "SELECT EXISTS (SELECT * FROM matches WHERE match_cat_id = $1 AND user_cat_id = $2)"
+	query := "SELECT EXISTS (SELECT * FROM matches WHERE match_cat_id = $1 AND user_cat_id = $2 AND deleted_at IS NULL)"
 	var exist bool
 	if err := r.db.QueryRow(ctx, query, matchCatID, userCatID).Scan(&exist); err != nil {
 		return false, err

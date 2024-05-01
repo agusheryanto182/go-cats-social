@@ -13,7 +13,7 @@ type MatchGetRes struct {
 	IsApproved     bool       `json:"-"`
 	Message        string     `json:"message"`
 	CreatedAt      string     `json:"createdAt"`
-	DeletedAt      *time.Time `json:"deletedAt"`
+	DeletedAt      *time.Time `json:"-"`
 }
 
 type UserMatch struct {

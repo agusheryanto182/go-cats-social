@@ -16,6 +16,19 @@ type MatchServiceImpl struct {
 	catRepo   repository.CatRepository
 }
 
+// DeleteMatchByIssuer implements MatchService.
+func (s *MatchServiceImpl) DeleteMatchByIssuer(ctx context.Context, id uint64) error {
+	tx, err := s.db.Begin(ctx)
+
+	if err != nil {
+		return err
+	}
+
+	defer helper.CommitOrRollback(tx)
+
+	return s.matchRepo.DeleteMatchByIssuer(ctx, tx, id)
+}
+
 // Reject implements MatchService.
 func (s *MatchServiceImpl) Reject(ctx context.Context, matchID, receiverID uint64) error {
 	tx, err := s.db.Begin(ctx)
@@ -63,8 +76,8 @@ func (s *MatchServiceImpl) DeleteRequestByCatID(ctx context.Context, catID, user
 }
 
 // IsMatchExist implements MatchService.
-func (s *MatchServiceImpl) IsMatchExist(ctx context.Context, id, userID uint64) (*domain.Matches, error) {
-	return s.matchRepo.IsMatchExist(ctx, id, userID)
+func (s *MatchServiceImpl) IsMatchExist(ctx context.Context, id uint64) (*domain.Matches, error) {
+	return s.matchRepo.IsMatchExist(ctx, id)
 }
 
 // GetMatch implements MatchService.

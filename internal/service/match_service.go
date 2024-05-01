@@ -12,8 +12,9 @@ type MatchService interface {
 	IsRequestExist(ctx context.Context, matchCatID, userCatID uint64) (bool, error)
 	IsHaveRequest(ctx context.Context, catID uint64) (bool, error)
 	GetMatch(ctx context.Context, userID uint64) ([]*dto.MatchGetRes, error)
-	IsMatchExist(ctx context.Context, id, userID uint64) (*domain.Matches, error)
+	IsMatchExist(ctx context.Context, id uint64) (*domain.Matches, error)
 	DeleteRequestByCatID(ctx context.Context, catID, userCatID uint64) error
 	ApproveTheMatch(ctx context.Context, matchID, matchCatID, userCatID, receiverID uint64) error
 	Reject(ctx context.Context, matchID, receiverID uint64) error
+	DeleteMatchByIssuer(ctx context.Context, id uint64) error
 }

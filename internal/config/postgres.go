@@ -16,7 +16,7 @@ func InitialDB(cfg *Global) *pgx.Conn {
 		log.Panic(err)
 	}
 
-	fmt.Println("successfully connected to database")
+	log.Println("successfully connected to database")
 
 	return db
 }

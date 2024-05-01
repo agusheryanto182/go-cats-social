@@ -1,8 +1,11 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"time"
 
 	"github.com/agusheryanto182/go-social-media/internal/app"
@@ -37,14 +40,29 @@ func main() {
 	router := app.NewRouter(userCtrl, catCtrl, userSvc, jwt, matchCtrl)
 
 	srv := &http.Server{
-		Handler: router,
 		Addr:    "127.0.0.1:8080",
+		Handler: router,
 
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
 
-	if err := srv.ListenAndServe(); err != nil {
-		log.Fatal(err)
+	go func() { // create a goroutine for servers
+		log.Fatal(srv.ListenAndServe())
+	}()
+
+	quit := make(chan os.Signal, 1)   // create channel that can receive signal
+	signal.Notify(quit, os.Interrupt) // set quit that can receive signal from os.Interrupt , when program receive signal os.Interrupt,
+	// it will send to quit, and program will exit
+	<-quit // block program until receive signal
+	log.Println("Shutting down server...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second) // create context with timeout and cancel
+	defer cancel()                                                          // should be running even if program exit, error or panic
+	if err := srv.Shutdown(ctx); err != nil {                               // shutdown server with context
+		log.Fatal("Server forced to shutdown:", err)
 	}
+
+	log.Println("Server exiting")
+
 }
