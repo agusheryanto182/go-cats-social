@@ -179,6 +179,9 @@ func (c *CatControllerImpl) GetCat(w http.ResponseWriter, r *http.Request) {
 		if ownedBool {
 			query += " AND user_id = $" + strconv.Itoa(len(args)+1)
 			args = append(args, int(userID))
+		} else {
+			query += " AND user_id != $" + strconv.Itoa(len(args)+1)
+			args = append(args, int(userID))
 		}
 	}
 
