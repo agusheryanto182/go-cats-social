@@ -42,9 +42,6 @@ func main() {
 	srv := &http.Server{
 		Addr:    "127.0.0.1:8080",
 		Handler: router,
-
-		WriteTimeout: 15 * time.Second,
-		ReadTimeout:  15 * time.Second,
 	}
 
 	go func() { // create a goroutine for servers

@@ -193,7 +193,7 @@ func (r *MatchRepositoryImpl) FindMatchByIssuedID(ctx context.Context, issuedID 
 
 // IsHaveRequest implements MatchRepository.
 func (r *MatchRepositoryImpl) IsHaveRequest(ctx context.Context, catID uint64) (bool, error) {
-	query := "SELECT EXISTS (SELECT * FROM matches WHERE match_cat_id = $1 OR user_cat_id = $1)"
+	query := "SELECT EXISTS (SELECT * FROM matches WHERE match_cat_id = $1 OR user_cat_id = $1 AND deleted_at IS NULL)"
 	var exist bool
 	if err := r.db.QueryRow(ctx, query, catID).Scan(&exist); err != nil {
 		return false, err
@@ -202,7 +202,7 @@ func (r *MatchRepositoryImpl) IsHaveRequest(ctx context.Context, catID uint64) (
 }
 
 func (r *MatchRepositoryImpl) IsRequestExist(ctx context.Context, matchCatID, userCatID uint64) (bool, error) {
-	query := "SELECT EXISTS (SELECT * FROM matches WHERE (match_cat_id = $1 OR user_cat_id = $1 OR match_cat_id = $2 OR user_cat_id = $2) AND deleted_at IS NULL)"
+	query := "SELECT EXISTS (SELECT * FROM matches WHERE (match_cat_id = $1 AND user_cat_id = $2) OR (match_cat_id = $2 AND user_cat_id = $1) AND deleted_at IS NULL)"
 	var exist bool
 	if err := r.db.QueryRow(ctx, query, matchCatID, userCatID).Scan(&exist); err != nil {
 		return false, err

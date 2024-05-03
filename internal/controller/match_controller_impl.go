@@ -86,7 +86,7 @@ func (c *MatchControllerImpl) Reject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := c.matchSvc.Reject(r.Context(), matchID.MatchIdInt, currentUser.ID); err != nil {
-		helper.WriteResponse(w, web.InternalServerErrorResponse("internal server error", err))
+		helper.WriteResponse(w, web.BadRequestResponse("bad request", err))
 		return
 	}
 
@@ -100,7 +100,7 @@ func (c *MatchControllerImpl) Approve(w http.ResponseWriter, r *http.Request) {
 	matchID := &dto.MatchIdReq{}
 
 	if err := helper.ReadFromRequestBody(r, matchID); err != nil {
-		helper.WriteResponse(w, web.InternalServerErrorResponse("internal server error", err))
+		helper.WriteResponse(w, web.BadRequestResponse("bad request", err))
 		return
 	}
 
@@ -142,10 +142,10 @@ func (c *MatchControllerImpl) Approve(w http.ResponseWriter, r *http.Request) {
 
 	if err := c.matchSvc.ApproveTheMatch(r.Context(), matchID.MatchIdInt, isMatchExist.MatchCatID, isMatchExist.UserCatID, currentUser.ID); err != nil {
 		if err == pgx.ErrNoRows {
-			helper.WriteResponse(w, web.BadRequestResponse("bad request", err))
+			helper.WriteResponse(w, web.NotFoundResponse("not found", err))
 			return
 		}
-		helper.WriteResponse(w, web.InternalServerErrorResponse("internal server error", err))
+		helper.WriteResponse(w, web.BadRequestResponse("bad request", err))
 		return
 	}
 	c.matchSvc.DeleteRequestByCatID(r.Context(), isMatchExist.MatchCatID, isMatchExist.UserCatID)
@@ -160,7 +160,7 @@ func (c *MatchControllerImpl) GetMatch(w http.ResponseWriter, r *http.Request) {
 
 	matchRes, err := c.matchSvc.GetMatch(r.Context(), currentUser.ID)
 	if err != nil {
-		helper.WriteResponse(w, web.InternalServerErrorResponse("internal server error", err))
+		helper.WriteResponse(w, web.BadRequestResponse("bad request", err))
 		return
 	}
 
@@ -186,25 +186,25 @@ func (c *MatchControllerImpl) Match(w http.ResponseWriter, r *http.Request) {
 
 	matchCatIdInt, err := strconv.ParseUint(matchReq.MatchCatID, 10, 64)
 	if err != nil {
-		helper.WriteResponse(w, web.BadRequestResponse("bad request", err))
+		helper.WriteResponse(w, web.NotFoundResponse("not found", errors.New("value out of range")))
 		return
 	}
 
 	userCatIdInt, err := strconv.ParseUint(matchReq.UserCatID, 10, 64)
 	if err != nil {
-		helper.WriteResponse(w, web.BadRequestResponse("bad request", err))
-		return
-	}
-
-	matchCatDetail, err := c.catSvc.GetByID(r.Context(), matchCatIdInt)
-	if err != nil {
-		helper.WriteResponse(w, web.BadRequestResponse("bad request", err))
+		helper.WriteResponse(w, web.NotFoundResponse("not found", errors.New("value out of range")))
 		return
 	}
 
 	userCatDetail, err := c.catSvc.GetByIdAndUserID(r.Context(), userCatIdInt, currentUser.ID)
 	if err != nil {
-		helper.WriteResponse(w, web.BadRequestResponse("bad request", err))
+		helper.WriteResponse(w, web.NotFoundResponse("not found", err))
+		return
+	}
+
+	matchCatDetail, err := c.catSvc.GetByID(r.Context(), matchCatIdInt)
+	if err != nil {
+		helper.WriteResponse(w, web.NotFoundResponse("not found", err))
 		return
 	}
 
@@ -212,6 +212,7 @@ func (c *MatchControllerImpl) Match(w http.ResponseWriter, r *http.Request) {
 	matchReq.UserCatInt = userCatIdInt
 	matchReq.ReceiverBy = matchCatDetail.UserID
 
+	// check if request already exist
 	isReqExist, _ := c.matchSvc.IsRequestExist(r.Context(), uint64(matchCatIdInt), uint64(userCatIdInt))
 	if isReqExist {
 		helper.WriteResponse(w, web.BadRequestResponse("bad request", errors.New("already matched or requested")))
@@ -223,18 +224,8 @@ func (c *MatchControllerImpl) Match(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if matchReq.MatchCatID == matchReq.UserCatID {
+	if matchReq.MatchCatID == matchReq.UserCatID || matchCatDetail.UserID == userCatDetail.UserID {
 		helper.WriteResponse(w, web.BadRequestResponse("bad request", errors.New("you can't match with your own cat")))
-		return
-	}
-
-	if matchCatDetail.UserID == userCatDetail.UserID {
-		helper.WriteResponse(w, web.BadRequestResponse("bad request", errors.New("you can't match with your own cat")))
-		return
-	}
-
-	if matchCatDetail.Sex == userCatDetail.Sex {
-		helper.WriteResponse(w, web.BadRequestResponse("bad request", errors.New("you can't match with same sex cat")))
 		return
 	}
 
@@ -243,8 +234,13 @@ func (c *MatchControllerImpl) Match(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if matchCatDetail.Sex == userCatDetail.Sex {
+		helper.WriteResponse(w, web.BadRequestResponse("bad request", errors.New("you can't match with same sex cat")))
+		return
+	}
+
 	if err := c.matchSvc.Create(r.Context(), matchReq); err != nil {
-		helper.WriteResponse(w, web.InternalServerErrorResponse("internal server error", err))
+		helper.WriteResponse(w, web.BadRequestResponse("bad request", err))
 		return
 	}
 
