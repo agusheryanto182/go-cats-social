@@ -22,3 +22,4 @@ func InitialDB(cfg *Global) *pgx.Conn {
 }
 
 //  migrate -database "postgres://postgres:postgres@localhost:5432/cats-sosial?sslmode=disable" -path db/migrations up
+//  migrate -database "postgres://postgres:postgres@localhost:5432/cats-sosial?sslmode=disable" -path db/migrations down
