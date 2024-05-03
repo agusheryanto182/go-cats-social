@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/agusheryanto182/go-social-media/internal/dto"
 	"github.com/agusheryanto182/go-social-media/internal/helper"
@@ -16,7 +17,7 @@ type CatServiceImpl struct {
 }
 
 // GetDoubleCats implements CatService.
-func (s *CatServiceImpl) CheckCats(ctx context.Context, matchCatID , userCatID uint64) ([]*dto.CatResCheck, error) {
+func (s *CatServiceImpl) CheckCats(ctx context.Context, matchCatID, userCatID uint64) ([]*dto.CatResCheck, error) {
 	return s.catRepo.CheckCats(ctx, matchCatID, userCatID)
 }
 
@@ -110,7 +111,7 @@ func (s *CatServiceImpl) Create(ctx context.Context, payload *dto.CatReq) (*dto.
 	}
 
 	return &dto.CatRes{
-		ID:        cat.ID,
+		ID:        strconv.Itoa(int(cat.ID)),
 		CreatedAt: cat.CreatedAt,
 	}, nil
 }

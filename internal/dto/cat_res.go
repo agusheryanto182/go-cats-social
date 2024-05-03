@@ -6,12 +6,12 @@ import (
 )
 
 type CatRes struct {
-	ID        uint64 `json:"id"`
+	ID        string `json:"id"`
 	CreatedAt string `json:"createdAt"`
 }
 
 type CatAllsRes struct {
-	ID          uint64       `json:"id"`
+	ID          string       `json:"id"`
 	UserID      uint64       `json:"-"`
 	Name        string       `json:"name"`
 	Race        string       `json:"race"`

@@ -81,11 +81,11 @@ func (c *CatControllerImpl) Update(w http.ResponseWriter, r *http.Request) {
 
 	isRequest, err := c.matchSvc.IsHaveRequest(r.Context(), catInt)
 	if err != nil {
-		helper.WriteResponse(w, web.InternalServerErrorResponse("internal server error", err))
+		helper.WriteResponse(w, web.BadRequestResponse("bad request", err))
 		return
 	}
 
-	if catReq.Sex != checkCat.Sex {
+	if catReq.Sex != "" {
 		if checkCat.HasMatched || isRequest {
 			helper.WriteResponse(w, web.BadRequestResponse("bad request", errors.New("you can't update sex when cat is already requested or matched")))
 			return
@@ -110,7 +110,6 @@ func (c *CatControllerImpl) GetCat(w http.ResponseWriter, r *http.Request) {
 
 	idParam := r.URL.Query().Get("id")
 	cleanedIdParam := strings.ReplaceAll(idParam, "\"", "")
-	idINT, _ := strconv.Atoi(cleanedIdParam)
 
 	limit := r.URL.Query().Get("limit")
 	offset := r.URL.Query().Get("offset")
@@ -138,7 +137,8 @@ func (c *CatControllerImpl) GetCat(w http.ResponseWriter, r *http.Request) {
 
 	args := make([]interface{}, 0)
 
-	if idINT > 0 {
+	if cleanedIdParam != "" {
+		idINT, _ := strconv.Atoi(cleanedIdParam)
 		query += " AND id = $" + strconv.Itoa(len(args)+1)
 		args = append(args, idINT)
 	}
@@ -209,10 +209,10 @@ func (c *CatControllerImpl) GetCat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(result) <= 0 {
-		helper.WriteResponse(w, web.NotFoundResponse("not found", errors.New("cat not found")))
-		return
-	}
+	// if len(result) <= 0 {
+	// 	helper.WriteResponse(w, web.NotFoundResponse("not found", errors.New("cat not found")))
+	// 	return
+	// }
 
 	helper.WriteResponse(w, web.OkResponse("successfully get cats", result))
 }
@@ -236,7 +236,7 @@ func (c *CatControllerImpl) Create(w http.ResponseWriter, r *http.Request) {
 
 	result, err := c.catSvc.Create(r.Context(), newCat)
 	if err != nil {
-		helper.WriteResponse(w, web.InternalServerErrorResponse("internal server error", err))
+		helper.WriteResponse(w, web.BadRequestResponse("bad request", err))
 		return
 	}
 

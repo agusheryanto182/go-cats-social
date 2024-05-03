@@ -3,7 +3,7 @@ package dto
 import "time"
 
 type MatchGetRes struct {
-	ID             uint64     `json:"id"`
+	ID             string     `json:"id"`
 	IssuedBy       uint64     `json:"-"`
 	Issued         UserMatch  `json:"issuedBy"`
 	MatchCatID     uint64     `json:"-"`
@@ -17,14 +17,14 @@ type MatchGetRes struct {
 }
 
 type UserMatch struct {
-	ID        uint64 `json:"-"`
+	ID        string `json:"-"`
 	Email     string `json:"email"`
 	Name      string `json:"name"`
 	CreatedAt string `json:"createdAt"`
 }
 
 type CatMatches struct {
-	ID          uint64   `json:"id"`
+	ID          string   `json:"id"`
 	UserID      uint64   `json:"-"`
 	Name        string   `json:"name"`
 	Race        string   `json:"race"`

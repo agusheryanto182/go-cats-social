@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"strconv"
 	"time"
 
 	"github.com/agusheryanto182/go-social-media/internal/dto"
@@ -139,12 +140,13 @@ func (r *MatchRepositoryImpl) FindMatchByIssuedID(ctx context.Context, issuedID 
 	for rows.Next() {
 		match := &dto.MatchGetRes{}
 		var issuedByCreatedAt, matchCatDetailCreatedAt, userCatDetailCreatedAt, createdAt time.Time
+		var matchIdInt, matchCatDetailInt, userCatDetailInt *uint64
 		if err := rows.Scan(
-			&match.ID,
+			&matchIdInt,
 			&match.Issued.Name,
 			&match.Issued.Email,
 			&issuedByCreatedAt,
-			&match.MatchCatDetail.ID,
+			&matchCatDetailInt,
 			&match.MatchCatDetail.Name,
 			&match.MatchCatDetail.Race,
 			&match.MatchCatDetail.Sex,
@@ -153,7 +155,7 @@ func (r *MatchRepositoryImpl) FindMatchByIssuedID(ctx context.Context, issuedID 
 			&match.MatchCatDetail.ImageUrls,
 			&match.MatchCatDetail.HasMatched,
 			&matchCatDetailCreatedAt,
-			&match.UserCatDetail.ID,
+			&userCatDetailInt,
 			&match.UserCatDetail.Name,
 			&match.UserCatDetail.Race,
 			&match.UserCatDetail.Sex,
@@ -168,6 +170,11 @@ func (r *MatchRepositoryImpl) FindMatchByIssuedID(ctx context.Context, issuedID 
 		); err != nil {
 			return nil, err
 		}
+
+		match.ID = strconv.Itoa(int(*matchIdInt))
+		match.MatchCatDetail.ID = strconv.Itoa(int(*matchCatDetailInt))
+		match.UserCatDetail.ID = strconv.Itoa(int(*userCatDetailInt))
+
 		if match.DeletedAt != nil {
 			continue
 		}
@@ -195,7 +202,7 @@ func (r *MatchRepositoryImpl) IsHaveRequest(ctx context.Context, catID uint64) (
 }
 
 func (r *MatchRepositoryImpl) IsRequestExist(ctx context.Context, matchCatID, userCatID uint64) (bool, error) {
-	query := "SELECT EXISTS (SELECT * FROM matches WHERE match_cat_id = $1 AND user_cat_id = $2 AND deleted_at IS NULL)"
+	query := "SELECT EXISTS (SELECT * FROM matches WHERE (match_cat_id = $1 OR user_cat_id = $1 OR match_cat_id = $2 OR user_cat_id = $2) AND deleted_at IS NULL)"
 	var exist bool
 	if err := r.db.QueryRow(ctx, query, matchCatID, userCatID).Scan(&exist); err != nil {
 		return false, err

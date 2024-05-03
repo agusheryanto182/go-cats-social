@@ -2,7 +2,6 @@ package controller
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -81,7 +80,7 @@ func (c *MatchControllerImpl) Reject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if isMatchExist.DeletedAt != nil {
+	if isMatchExist.DeletedAt != nil || isMatchExist.IsApproved {
 		helper.WriteResponse(w, web.BadRequestResponse("bad request", errors.New("match id is no longer valid")))
 		return
 	}
@@ -129,7 +128,6 @@ func (c *MatchControllerImpl) Approve(w http.ResponseWriter, r *http.Request) {
 	}
 
 	checkCats, _ := c.catSvc.CheckCats(r.Context(), isMatchExist.MatchCatID, isMatchExist.UserCatID)
-	fmt.Print(checkCats)
 	for _, cat := range checkCats {
 		if cat.HasMatched {
 			helper.WriteResponse(w, web.BadRequestResponse("bad request", errors.New("has matched")))
@@ -166,11 +164,6 @@ func (c *MatchControllerImpl) GetMatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(matchRes) == 0 {
-		helper.WriteResponse(w, web.NotFoundResponse("no match found", errors.New("null")))
-		return
-	}
-
 	helper.WriteResponse(w, web.OkResponse("successfully get match requests", matchRes))
 }
 
@@ -180,7 +173,7 @@ func (c *MatchControllerImpl) Match(w http.ResponseWriter, r *http.Request) {
 
 	matchReq := &dto.MatchReq{}
 	if err := helper.ReadFromRequestBody(r, matchReq); err != nil {
-		helper.WriteResponse(w, web.InternalServerErrorResponse("internal server error", err))
+		helper.WriteResponse(w, web.BadRequestResponse("bad request", err))
 		return
 	}
 
@@ -255,7 +248,7 @@ func (c *MatchControllerImpl) Match(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	helper.WriteResponse(w, web.OkResponse("successfully send match request", "success"))
+	helper.WriteResponse(w, web.CreatedResponse("successfully send match request", "success"))
 }
 
 func NewMatchController(matchSvc service.MatchService, catSvc service.CatService, valid *validator.Validate) MatchController {

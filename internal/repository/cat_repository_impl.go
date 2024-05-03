@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"strconv"
 	"strings"
 
 	"github.com/agusheryanto182/go-social-media/internal/dto"
@@ -119,10 +120,13 @@ func (r *CatRepositoryImpl) FindByFilterAndArgs(ctx context.Context, query strin
 
 	for rows.Next() {
 		cat := &dto.CatAllsRes{}
-		err := rows.Scan(&cat.ID, &cat.UserID, &cat.Name, &cat.Race, &cat.Sex, &cat.AgeInMonth, &cat.Description, &cat.HasMatched, &cat.ImageUrls, &cat.CreatedAt)
+		var catIdInt *int64
+		err := rows.Scan(&catIdInt, &cat.UserID, &cat.Name, &cat.Race, &cat.Sex, &cat.AgeInMonth, &cat.Description, &cat.HasMatched, &cat.ImageUrls, &cat.CreatedAt)
 		if err != nil {
 			return nil, err
 		}
+
+		cat.ID = strconv.Itoa(int(*catIdInt))
 
 		for i, img := range cat.ImageUrls {
 			cat.ImageUrls[i] = strings.TrimSpace(img)
