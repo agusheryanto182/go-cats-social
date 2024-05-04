@@ -20,7 +20,7 @@ import (
 
 func main() {
 	cfg := config.NewConfig()
-	db := config.InitialDB(cfg)
+	db := config.NewDB(cfg)
 	hash := hash.NewHash(cfg)
 	jwt := jwt.NewJWT(cfg.Jwt.Secret)
 	valid := validator.New()
@@ -29,9 +29,9 @@ func main() {
 	catRepo := repository.NewCatRepository(db)
 	matchRepo := repository.NewMatchRepository(db)
 
-	userSvc := service.NewUserService(userRepo, db, hash, jwt)
-	catSvc := service.NewCatService(catRepo, db)
-	matchSvc := service.NewMatchService(db, matchRepo, catRepo)
+	userSvc := service.NewUserService(userRepo, hash, jwt)
+	catSvc := service.NewCatService(catRepo)
+	matchSvc := service.NewMatchService(matchRepo, catRepo)
 
 	userCtrl := controller.NewUserController(userSvc, valid)
 	catCtrl := controller.NewCatController(catSvc, valid, matchSvc)

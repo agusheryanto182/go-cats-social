@@ -4,11 +4,11 @@ import (
 	"context"
 
 	"github.com/agusheryanto182/go-social-media/internal/model/domain"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type UserRepositoryImpl struct {
-	db *pgx.Conn
+	db *pgxpool.Pool
 }
 
 // FindByID implements UserRepository.
@@ -45,7 +45,20 @@ func (r *UserRepositoryImpl) IsEmailExist(ctx context.Context, email string) (bo
 }
 
 // Create implements UserRepository.
-func (r *UserRepositoryImpl) Create(ctx context.Context, tx pgx.Tx, user *domain.User) (*domain.User, error) {
+func (r *UserRepositoryImpl) Create(ctx context.Context, user *domain.User) (*domain.User, error) {
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() {
+		if err != nil {
+			tx.Rollback(ctx)
+		} else {
+			tx.Commit(ctx)
+		}
+	}()
+
 	query := "INSERT INTO users (email, name, password) VALUES ($1, $2, $3) RETURNING id"
 
 	if err := tx.QueryRow(ctx, query, user.Email, user.Name, user.Password).Scan(&user.ID); err != nil {
@@ -55,7 +68,7 @@ func (r *UserRepositoryImpl) Create(ctx context.Context, tx pgx.Tx, user *domain
 	return user, nil
 }
 
-func NewUserRepository(db *pgx.Conn) UserRepository {
+func NewUserRepository(db *pgxpool.Pool) UserRepository {
 	return &UserRepositoryImpl{
 		db: db,
 	}

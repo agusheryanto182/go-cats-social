@@ -5,15 +5,12 @@ import (
 	"strconv"
 
 	"github.com/agusheryanto182/go-social-media/internal/dto"
-	"github.com/agusheryanto182/go-social-media/internal/helper"
 	"github.com/agusheryanto182/go-social-media/internal/model/domain"
 	"github.com/agusheryanto182/go-social-media/internal/repository"
-	"github.com/jackc/pgx/v5"
 )
 
 type CatServiceImpl struct {
 	catRepo repository.CatRepository
-	db      *pgx.Conn
 }
 
 // GetDoubleCats implements CatService.
@@ -23,26 +20,14 @@ func (s *CatServiceImpl) CheckCats(ctx context.Context, matchCatID, userCatID ui
 
 // DoubleUpdateHasMatched implements CatService.
 func (s *CatServiceImpl) DoubleUpdateHasMatched(ctx context.Context, catID uint64, userCatID uint64) error {
-	tx, err := s.db.Begin(ctx)
-	if err != nil {
-		return err
-	}
 
-	defer helper.CommitOrRollback(tx)
-
-	return s.catRepo.DoubleUpdateHasMatched(ctx, tx, catID, userCatID)
+	return s.catRepo.DoubleUpdateHasMatched(ctx, catID, userCatID)
 }
 
 // Delete implements CatService.
 func (s *CatServiceImpl) Delete(ctx context.Context, catID uint64, userID uint64) error {
-	tx, err := s.db.Begin(ctx)
-	if err != nil {
-		return err
-	}
 
-	defer helper.CommitOrRollback(tx)
-
-	return s.catRepo.Delete(ctx, tx, catID, userID)
+	return s.catRepo.Delete(ctx, catID, userID)
 }
 
 // GetByIdAndUserID implements CatService.
@@ -56,14 +41,7 @@ func (s *CatServiceImpl) IsCatExist(ctx context.Context, catID, userID uint64) (
 }
 
 // Update implements CatService.
-func (s *CatServiceImpl) Update(ctx context.Context, cat *dto.CatReq) (*domain.Cats, error) {
-	tx, err := s.db.Begin(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	defer helper.CommitOrRollback(tx)
-
+func (s *CatServiceImpl) Update(ctx context.Context, cat *dto.CatReq) error {
 	payload := &domain.Cats{
 		ID:          cat.ID,
 		UserID:      cat.UserID,
@@ -75,7 +53,7 @@ func (s *CatServiceImpl) Update(ctx context.Context, cat *dto.CatReq) (*domain.C
 		ImageUrls:   cat.ImageUrls,
 	}
 
-	return s.catRepo.Update(ctx, tx, payload)
+	return s.catRepo.Update(ctx, payload)
 }
 
 // GetByFilterAndArgs implements CatService.
@@ -90,14 +68,8 @@ func (s *CatServiceImpl) GetByID(ctx context.Context, id uint64) (*domain.Cats, 
 
 // Create implements CatService.
 func (s *CatServiceImpl) Create(ctx context.Context, payload *dto.CatReq) (*dto.CatRes, error) {
-	tx, err := s.db.Begin(ctx)
-	if err != nil {
-		return nil, err
-	}
 
-	defer helper.CommitOrRollback(tx)
-
-	cat, err := s.catRepo.Create(ctx, tx, &domain.Cats{
+	cat, err := s.catRepo.Create(ctx, &domain.Cats{
 		UserID:      payload.UserID,
 		Name:        payload.Name,
 		Race:        payload.Race,
@@ -116,9 +88,8 @@ func (s *CatServiceImpl) Create(ctx context.Context, payload *dto.CatReq) (*dto.
 	}, nil
 }
 
-func NewCatService(catRepo repository.CatRepository, db *pgx.Conn) CatService {
+func NewCatService(catRepo repository.CatRepository) CatService {
 	return &CatServiceImpl{
 		catRepo: catRepo,
-		db:      db,
 	}
 }

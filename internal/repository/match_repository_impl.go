@@ -8,14 +8,22 @@ import (
 	"github.com/agusheryanto182/go-social-media/internal/dto"
 	"github.com/agusheryanto182/go-social-media/internal/model/domain"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type MatchRepositoryImpl struct {
-	db *pgx.Conn
+	db *pgxpool.Pool
 }
 
 // DeleteMatchByIssuer implements MatchRepository.
-func (r *MatchRepositoryImpl) DeleteMatchByIssuer(ctx context.Context, tx pgx.Tx, id uint64) error {
+func (r *MatchRepositoryImpl) DeleteMatchByIssuer(ctx context.Context, id uint64) error {
+	tx, err := r.db.Acquire(ctx)
+	if err != nil {
+		return err
+	}
+
+	defer tx.Release()
+
 	query := "UPDATE matches SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL"
 
 	row, err := tx.Exec(ctx, query, id)
@@ -30,7 +38,14 @@ func (r *MatchRepositoryImpl) DeleteMatchByIssuer(ctx context.Context, tx pgx.Tx
 }
 
 // Reject implements MatchRepository.
-func (r *MatchRepositoryImpl) Reject(ctx context.Context, tx pgx.Tx, matchID, receiverID uint64) error {
+func (r *MatchRepositoryImpl) Reject(ctx context.Context, matchID, receiverID uint64) error {
+	tx, err := r.db.Acquire(ctx)
+	if err != nil {
+		return err
+	}
+
+	defer tx.Release()
+
 	query := `
 	UPDATE matches SET deleted_at = NOW() WHERE id = $1 AND receiver_by = $2 AND is_approved = false AND deleted_at IS NULL
 	`
@@ -48,7 +63,14 @@ func (r *MatchRepositoryImpl) Reject(ctx context.Context, tx pgx.Tx, matchID, re
 }
 
 // ApproveTheMatch implements MatchRepository.
-func (r *MatchRepositoryImpl) ApproveTheMatch(ctx context.Context, tx pgx.Tx, matchID uint64, receiverID uint64) error {
+func (r *MatchRepositoryImpl) ApproveTheMatch(ctx context.Context, matchID uint64, receiverID uint64) error {
+	tx, err := r.db.Acquire(ctx)
+	if err != nil {
+		return err
+	}
+
+	defer tx.Release()
+
 	query := "UPDATE matches SET is_approved = true WHERE id = $1 AND receiver_by = $2 AND is_approved = false AND deleted_at IS NULL"
 	row, err := tx.Exec(ctx, query, matchID, receiverID)
 	if err != nil {
@@ -62,7 +84,14 @@ func (r *MatchRepositoryImpl) ApproveTheMatch(ctx context.Context, tx pgx.Tx, ma
 }
 
 // DeleteRequestByCatID implements MatchRepository.
-func (r *MatchRepositoryImpl) DeleteRequestByCatIdAndUserCatID(ctx context.Context, tx pgx.Tx, catID, userCatID uint64) error {
+func (r *MatchRepositoryImpl) DeleteRequestByCatIdAndUserCatID(ctx context.Context, catID, userCatID uint64) error {
+	tx, err := r.db.Acquire(ctx)
+	if err != nil {
+		return err
+	}
+
+	defer tx.Release()
+
 	query := `
 	UPDATE matches SET deleted_at = NOW()
 	WHERE is_approved = false 
@@ -211,7 +240,14 @@ func (r *MatchRepositoryImpl) IsRequestExist(ctx context.Context, matchCatID, us
 }
 
 // Create implements MatchRepository.
-func (r *MatchRepositoryImpl) Create(ctx context.Context, tx pgx.Tx, match *domain.Matches) error {
+func (r *MatchRepositoryImpl) Create(ctx context.Context, match *domain.Matches) error {
+	tx, err := r.db.Acquire(ctx)
+	if err != nil {
+		return err
+	}
+
+	defer tx.Release()
+
 	return tx.QueryRow(ctx, `
 		INSERT INTO matches (issued_by, receiver_by,  match_cat_id, user_cat_id, message)
 		VALUES ($1, $2, $3, $4, $5)
@@ -221,7 +257,7 @@ func (r *MatchRepositoryImpl) Create(ctx context.Context, tx pgx.Tx, match *doma
 	).Scan(&match.ID)
 }
 
-func NewMatchRepository(db *pgx.Conn) MatchRepository {
+func NewMatchRepository(db *pgxpool.Pool) MatchRepository {
 	return &MatchRepositoryImpl{
 		db: db,
 	}

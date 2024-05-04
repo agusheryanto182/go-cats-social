@@ -8,10 +8,11 @@ import (
 	"github.com/agusheryanto182/go-social-media/internal/dto"
 	"github.com/agusheryanto182/go-social-media/internal/model/domain"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type CatRepositoryImpl struct {
-	db *pgx.Conn
+	db *pgxpool.Pool
 }
 
 // FindDoubleCats implements CatRepository.
@@ -37,7 +38,14 @@ func (r *CatRepositoryImpl) CheckCats(ctx context.Context, matchCatID, userCatID
 }
 
 // DoubleUpdateHasMatched implements CatRepository.
-func (r *CatRepositoryImpl) DoubleUpdateHasMatched(ctx context.Context, tx pgx.Tx, catID uint64, userCatID uint64) error {
+func (r *CatRepositoryImpl) DoubleUpdateHasMatched(ctx context.Context, catID uint64, userCatID uint64) error {
+	tx, err := r.db.Acquire(ctx)
+	if err != nil {
+		return err
+	}
+
+	defer tx.Release()
+
 	query := "UPDATE cats SET has_matched = true WHERE id = $1 OR id = $2 AND deleted_at IS NULL"
 	rows, err := tx.Exec(ctx, query, catID, userCatID)
 	if err != nil {
@@ -52,7 +60,14 @@ func (r *CatRepositoryImpl) DoubleUpdateHasMatched(ctx context.Context, tx pgx.T
 }
 
 // Delete implements CatRepository.
-func (r *CatRepositoryImpl) Delete(ctx context.Context, tx pgx.Tx, catID uint64, userID uint64) error {
+func (r *CatRepositoryImpl) Delete(ctx context.Context, catID uint64, userID uint64) error {
+	tx, err := r.db.Acquire(ctx)
+	if err != nil {
+		return err
+	}
+
+	defer tx.Release()
+
 	query := "UPDATE cats SET deleted_at = NOW() WHERE id = $1 AND user_id = $2"
 	res, err := tx.Exec(ctx, query, catID, userID)
 	if err != nil {
@@ -89,22 +104,26 @@ func (r *CatRepositoryImpl) IsCatExist(ctx context.Context, catID, userID uint64
 }
 
 // Update implements CatRepository.
-func (r *CatRepositoryImpl) Update(ctx context.Context, tx pgx.Tx, cat *domain.Cats) (*domain.Cats, error) {
-	query := "UPDATE cats SET name = $2, race = $3, sex = $4, age_in_month = $5, description = $6, image_urls = $7 WHERE id = $1 AND user_id = $8 AND deleted_at IS NULL RETURNING name, race, sex, age_in_month, description, image_urls, to_char(created_at AT TIME ZONE 'ASIA/JAKARTA', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS created_at"
-
-	row := tx.QueryRow(ctx, query, cat.ID, cat.Name, cat.Race, cat.Sex, cat.AgeInMonth, cat.Description, cat.ImageUrls, cat.UserID)
-	if err := row.Scan(
-		&cat.Name,
-		&cat.Race,
-		&cat.Sex,
-		&cat.AgeInMonth,
-		&cat.Description,
-		&cat.ImageUrls,
-		&cat.CreatedAt,
-	); err != nil {
-		return nil, err
+func (r *CatRepositoryImpl) Update(ctx context.Context, cat *domain.Cats) error {
+	tx, err := r.db.Acquire(ctx)
+	if err != nil {
+		return err
 	}
-	return cat, nil
+
+	defer tx.Release()
+
+	query := "UPDATE cats SET name = $2, race = $3, sex = $4, age_in_month = $5, description = $6, image_urls = $7 WHERE id = $1 AND user_id = $8 AND deleted_at IS NULL"
+
+	res, err := tx.Exec(ctx, query, cat.ID, cat.Name, cat.Race, cat.Sex, cat.AgeInMonth, cat.Description, cat.ImageUrls, cat.UserID)
+	if err != nil {
+		return err
+	}
+
+	if res.RowsAffected() == 0 {
+		return pgx.ErrNoRows
+	}
+
+	return nil
 }
 
 // FindByFilterAndArgs implements CatRepository.
@@ -161,7 +180,14 @@ func (r *CatRepositoryImpl) FindByID(ctx context.Context, id uint64) (*domain.Ca
 }
 
 // Create implements CatRepository.
-func (r *CatRepositoryImpl) Create(ctx context.Context, tx pgx.Tx, cat *domain.Cats) (*domain.Cats, error) {
+func (r *CatRepositoryImpl) Create(ctx context.Context, cat *domain.Cats) (*domain.Cats, error) {
+	tx, err := r.db.Acquire(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	defer tx.Release()
+
 	query := "INSERT INTO cats (user_id, name, race, sex, age_in_month, description, image_urls) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, to_char(created_at AT TIME ZONE 'ASIA/JAKARTA', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS created_at"
 	if err := tx.QueryRow(ctx, query, cat.UserID, cat.Name, cat.Race, cat.Sex, cat.AgeInMonth, cat.Description, cat.ImageUrls).Scan(&cat.ID, &cat.CreatedAt); err != nil {
 		return nil, err
@@ -169,7 +195,7 @@ func (r *CatRepositoryImpl) Create(ctx context.Context, tx pgx.Tx, cat *domain.C
 	return cat, nil
 }
 
-func NewCatRepository(db *pgx.Conn) CatRepository {
+func NewCatRepository(db *pgxpool.Pool) CatRepository {
 	return &CatRepositoryImpl{
 		db: db,
 	}

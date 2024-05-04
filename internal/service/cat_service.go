@@ -12,7 +12,7 @@ type CatService interface {
 	GetByID(ctx context.Context, id uint64) (*domain.Cats, error)
 	GetByFilterAndArgs(ctx context.Context, query string, args []interface{}) ([]*dto.CatAllsRes, error)
 	IsCatExist(ctx context.Context, catID, userID uint64) (bool, error)
-	Update(ctx context.Context, cat *dto.CatReq) (*domain.Cats, error)
+	Update(ctx context.Context, cat *dto.CatReq) error
 	GetByIdAndUserID(ctx context.Context, id, userID uint64) (*domain.Cats, error)
 	Delete(ctx context.Context, catID, userID uint64) error
 	DoubleUpdateHasMatched(ctx context.Context, catID, userCatID uint64) error

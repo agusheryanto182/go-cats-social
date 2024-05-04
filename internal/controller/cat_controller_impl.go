@@ -79,11 +79,7 @@ func (c *CatControllerImpl) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	isRequest, err := c.matchSvc.IsHaveRequest(r.Context(), catInt)
-	if err != nil {
-		helper.WriteResponse(w, web.BadRequestResponse("bad request", err))
-		return
-	}
+	isRequest, _ := c.matchSvc.IsHaveRequest(r.Context(), catInt)
 
 	if catReq.Sex != "" {
 		if checkCat.HasMatched || isRequest {
@@ -92,13 +88,13 @@ func (c *CatControllerImpl) Update(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	cat, err := c.catSvc.Update(r.Context(), catReq)
+	err = c.catSvc.Update(r.Context(), catReq)
 	if err != nil {
 		helper.WriteResponse(w, web.InternalServerErrorResponse("internal server error", err))
 		return
 	}
 
-	helper.WriteResponse(w, web.OkResponse("successfully update cat", cat))
+	helper.WriteResponse(w, web.OkResponse("successfully update cat", "success"))
 
 }
 

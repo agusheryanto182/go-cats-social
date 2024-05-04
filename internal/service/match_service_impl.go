@@ -4,58 +4,34 @@ import (
 	"context"
 
 	"github.com/agusheryanto182/go-social-media/internal/dto"
-	"github.com/agusheryanto182/go-social-media/internal/helper"
 	"github.com/agusheryanto182/go-social-media/internal/model/domain"
 	"github.com/agusheryanto182/go-social-media/internal/repository"
-	"github.com/jackc/pgx/v5"
 )
 
 type MatchServiceImpl struct {
-	db        *pgx.Conn
 	matchRepo repository.MatchRepository
 	catRepo   repository.CatRepository
 }
 
 // DeleteMatchByIssuer implements MatchService.
 func (s *MatchServiceImpl) DeleteMatchByIssuer(ctx context.Context, id uint64) error {
-	tx, err := s.db.Begin(ctx)
 
-	if err != nil {
-		return err
-	}
-
-	defer helper.CommitOrRollback(tx)
-
-	return s.matchRepo.DeleteMatchByIssuer(ctx, tx, id)
+	return s.matchRepo.DeleteMatchByIssuer(ctx, id)
 }
 
 // Reject implements MatchService.
 func (s *MatchServiceImpl) Reject(ctx context.Context, matchID, receiverID uint64) error {
-	tx, err := s.db.Begin(ctx)
-	if err != nil {
-		return err
-	}
-
-	defer helper.CommitOrRollback(tx)
-
-	return s.matchRepo.Reject(ctx, tx, matchID, receiverID)
+	return s.matchRepo.Reject(ctx, matchID, receiverID)
 }
 
 // ApproveTheMatch implements MatchService.
 func (s *MatchServiceImpl) ApproveTheMatch(ctx context.Context, matchID, matchCatID, userCatID, receiverID uint64) error {
-	tx, err := s.db.Begin(ctx)
+	err := s.matchRepo.ApproveTheMatch(ctx, matchID, receiverID)
 	if err != nil {
 		return err
 	}
 
-	defer helper.CommitOrRollback(tx)
-
-	err = s.matchRepo.ApproveTheMatch(ctx, tx, matchID, receiverID)
-	if err != nil {
-		return err
-	}
-
-	err = s.catRepo.DoubleUpdateHasMatched(ctx, tx, matchCatID, userCatID)
+	err = s.catRepo.DoubleUpdateHasMatched(ctx, matchCatID, userCatID)
 	if err != nil {
 		return err
 	}
@@ -65,14 +41,7 @@ func (s *MatchServiceImpl) ApproveTheMatch(ctx context.Context, matchID, matchCa
 
 // DeleteRequestByCatID implements MatchService.
 func (s *MatchServiceImpl) DeleteRequestByCatID(ctx context.Context, catID, userCatID uint64) error {
-	tx, err := s.db.Begin(ctx)
-	if err != nil {
-		return err
-	}
-
-	defer helper.CommitOrRollback(tx)
-
-	return s.matchRepo.DeleteRequestByCatIdAndUserCatID(ctx, tx, catID, userCatID)
+	return s.matchRepo.DeleteRequestByCatIdAndUserCatID(ctx, catID, userCatID)
 }
 
 // IsMatchExist implements MatchService.
@@ -97,14 +66,7 @@ func (s *MatchServiceImpl) IsRequestExist(ctx context.Context, matchCatID uint64
 
 // Create implements MatchService.
 func (s *MatchServiceImpl) Create(ctx context.Context, payload *dto.MatchReq) error {
-	tx, err := s.db.Begin(ctx)
-	if err != nil {
-		return err
-	}
-
-	defer helper.CommitOrRollback(tx)
-
-	return s.matchRepo.Create(ctx, tx, &domain.Matches{
+	return s.matchRepo.Create(ctx, &domain.Matches{
 		IssuedBy:   payload.IssuedBy,
 		ReceiverBy: payload.ReceiverBy,
 		MatchCatID: payload.MatchCatInt,
@@ -113,9 +75,8 @@ func (s *MatchServiceImpl) Create(ctx context.Context, payload *dto.MatchReq) er
 	})
 }
 
-func NewMatchService(db *pgx.Conn, matchRepo repository.MatchRepository, catRepo repository.CatRepository) MatchService {
+func NewMatchService(matchRepo repository.MatchRepository, catRepo repository.CatRepository) MatchService {
 	return &MatchServiceImpl{
-		db:        db,
 		matchRepo: matchRepo,
 		catRepo:   catRepo,
 	}

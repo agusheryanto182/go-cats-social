@@ -212,30 +212,25 @@ func (c *MatchControllerImpl) Match(w http.ResponseWriter, r *http.Request) {
 	matchReq.UserCatInt = userCatIdInt
 	matchReq.ReceiverBy = matchCatDetail.UserID
 
-	// check if request already exist
-	isReqExist, _ := c.matchSvc.IsRequestExist(r.Context(), uint64(matchCatIdInt), uint64(userCatIdInt))
-	if isReqExist {
-		helper.WriteResponse(w, web.BadRequestResponse("bad request", errors.New("already matched or requested")))
-		return
-	}
-
 	if matchCatDetail == nil || userCatDetail == nil {
 		helper.WriteResponse(w, web.NotFoundResponse("not found", errors.New("cat not found")))
 		return
 	}
 
-	if matchReq.MatchCatID == matchReq.UserCatID || matchCatDetail.UserID == userCatDetail.UserID {
-		helper.WriteResponse(w, web.BadRequestResponse("bad request", errors.New("you can't match with your own cat")))
-		return
-	}
-
-	if matchCatDetail.HasMatched || userCatDetail.HasMatched {
-		helper.WriteResponse(w, web.BadRequestResponse("bad request", errors.New("you can't match with already matched cat")))
-		return
-	}
+	isReqExist, _ := c.matchSvc.IsRequestExist(r.Context(), uint64(matchCatIdInt), uint64(userCatIdInt))
 
 	if matchCatDetail.Sex == userCatDetail.Sex {
 		helper.WriteResponse(w, web.BadRequestResponse("bad request", errors.New("you can't match with same sex cat")))
+		return
+	}
+
+	if isReqExist || matchCatDetail.HasMatched || userCatDetail.HasMatched {
+		helper.WriteResponse(w, web.BadRequestResponse("bad request", errors.New("already matched or requested")))
+		return
+	}
+
+	if matchReq.MatchCatID == matchReq.UserCatID || matchCatDetail.UserID == userCatDetail.UserID {
+		helper.WriteResponse(w, web.BadRequestResponse("bad request", errors.New("you can't match with your own cat")))
 		return
 	}
 
